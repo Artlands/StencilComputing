@@ -23,4 +23,4 @@ stencil_memory: $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o
 	$(CC) -o $@ $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o
 
 clean:
-	rm -Rf ./src/*.o
+	rm -Rf ./src/*.o ./scripts/*.out

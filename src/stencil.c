@@ -65,6 +65,7 @@ extern int main( int argc, char **argv) {
   long k = 0;
 
   /*MEMORY TRACE FILE*/
+  // char trace[25];
   FILE *outfile = NULL;
   char filename[1024];
   /* ---- */
@@ -84,7 +85,7 @@ extern int main( int argc, char **argv) {
         sprintf( filename, "%s", optarg);
         break;
       case 'h':
-        printf("%s%s%s\n","usage : ", argv[0], " -bcdhltxyz" );
+        printf("%s%s%s\n","usage : ", argv[0], " -bcdhltxyzF" );
         printf(" -b <block_size>\n");
         printf(" -c <capacity>\n");
         printf(" -d <num_devs>\n");
@@ -115,12 +116,12 @@ extern int main( int argc, char **argv) {
   }
 
   /* Sanity check*/
-  if (bsize != 32 || bsize != 64 || bsize != 128 || bsize != 256) {
+  if (bsize != 32 && bsize != 64 && bsize != 128 && bsize != 256) {
     printf("ERROR: Block size is invalid\n");
     return -1;
   }
 
-  if (capacity != 4 || capacity != 8) {
+  if (capacity != 4 && capacity != 8) {
     printf("ERROR: Capacity size is invalid\n");
     return -1;
   }
@@ -219,10 +220,11 @@ extern int main( int argc, char **argv) {
    */
   for ( i = 0; i < num_req; i++) {
     // RD:8:0:0x0000000000000000
+    // sprintf( trace, "%s%"PRIu64"\n","RD:8:0:",addr_a[i]);
     fprintf( outfile,
-             "%s%"PRIu64"\n",
+             "%s%016" PRIx64 "\n",
              "RD:8:0:",
-             addr_a[i] );
+             (uint64_t)addr_a[i] );
   }
 
   fclose(outfile);
