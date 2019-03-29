@@ -11,17 +11,16 @@
  #include <unistd.h>
 
  /* ---------------------------------------------- INTERPRADD*/
- extern int interpradd( uint64_t *addr_arr,
+ extern int interpradd( uint64_t *rd_pos,
+                        uint64_t *wr_pos,
                         long i,
                         long j,
                         long k,
                         long size_x,
                         long size_y,
                         long size_z,
-                        long type )
+                        long sten_type )
 {
-  uint64_t *rtn_i = NULL;
-  int points;
   /*
    * Make sure memory access are valid
    *
@@ -33,43 +32,34 @@
      return -1;
    }
 
-   switch( type ) {
+   switch( sten_type ) {
     case 1:
-      points = 3;
-      rtn_i = malloc( sizeof( int ) * points);
       if( i = 0) {
-        *rtn_i = size_x - 1;
-        *(rtn_i + 1) = 0;
-        *(rtn_i + 2) = 1;
+       *rd_pos = size_x - 1;
+        *(rd_pos + 1) = 0;
+        *(rd_pos + 2) = 1;
       } else if ( i = size_x - 1) {
-        *rtn_i = i - 1;
-        *(rtn_i + 1) = i;
-        *(rtn_i + 2) = 0;
+        *rd_pos = i - 1;
+        *(rd_pos + 1) = i;
+        *(rd_pos + 2) = 0;
       } else {
-        *rtn_i = i - 1;
-        *(rtn_i + 1) = i;
-        *(rtn_i + 2) = i + 1;
+        *rd_pos = i - 1;
+        *(rd_pos + 1) = i;
+        *(rd_pos + 2) = i + 1;
       }
+      *wr_pos = i;
       break;
     case 2:
-      points = 3;
       break;
     case 3:
-      points = 3;
       break;
     case 4:
-      points = 3;
       break;
     case 5:
-      points = 3;
       break;
     case 6:
-      points = 3;
       break;
    }
-
-   *addr_arr = *rtn_i;
-
    return 0;
 }
 

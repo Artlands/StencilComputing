@@ -26,14 +26,15 @@ extern int genrands( uint64_t *addr_a,
                      uint32_t capacity,
                      uint32_t shiftamt );
 
-// extern int interpradd( uint64_t *addr_arr,
-//                       long i,
-//                       long j,
-//                       long k,
-//                       long size_x,
-//                       long size_y,
-//                       long size_z,
-//                       long sten_type );
+extern int interpradd( uint64_t *rd_pos,
+                       uint64_t *wr_pos,
+                       long i,
+                       long j,
+                       long k,
+                       long size_x,
+                       long size_y,
+                       long size_z,
+                       long sten_type );
 /* ------------------------------------------------------------ MAIN */
 /*
  * MAIN
@@ -63,11 +64,17 @@ extern int main( int argc, char **argv) {
   long i = 0;
   long j = 0;
   long k = 0;
+  int p = 0;
+  uint64_t rd_idx = 0;
+  uint64_t wr_idx = 0;
 
   /*MEMORY TRACE FILE*/
   // char trace[25];
   FILE *outfile = NULL;
   char filename[1024];
+  int points_size = 0;
+  uint64_t *rd_pos = NULL;
+  uint64_t *wr_pos = NULL;
   /* ---- */
 
   while( (ret = getopt( argc, argv, "b:c:d:ht:x:y:z:F:")) != -1 ) {
@@ -215,16 +222,78 @@ extern int main( int argc, char **argv) {
   }
 
   /*
+   * Get points size, allocate memory for storing rd_pos
+   *
+   */
+  switch( type ) {
+    case 1:
+      points_size = 3;
+      break;
+    case 2:
+      points_size = 5;
+      break;
+    case 3:
+      points_size = 5;
+      break;
+    case 4:
+      points_size = 9;
+      break;
+    case 5:
+      points_size = 7;
+      break;
+    case 6:
+      points_size = 27;
+      break;
+    default:
+      break;
+  }
+  rd_pos = malloc( sizeof( uint64_t ) * points_size);
+  if( rd_pos == NULL ) {
+    printf("Failed to allocation memory for storing rd_pos\n");
+    free( addr_a );
+    free( addr_b );
+    return -1;
+  }
+
+  /*
    * Generate memory address of stencil computing
    *
    */
-  for ( i = 0; i < num_req; i++) {
-    // RD:8:0:0x0000000000000000
-    // sprintf( trace, "%s%"PRIu64"\n","RD:8:0:",addr_a[i]);
-    fprintf( outfile,
-             "%s%016" PRIx64 "\n",
-             "RD:8:0:",
-             (uint64_t)addr_a[i] );
+
+  for ( i = 0; i < size_x; i++) {
+    for ( j = 0; j < size_y; j++) {
+      for( k = 0; k < size_z; k++) {
+        // Interpration
+        if( interpradd( rd_pos,
+                        wr_pos,
+                        i,
+                        j,
+                        k,
+                        size_x,
+                        size_y,
+                        size_z,
+                        sten_type) != 0) {
+          printf("Failed to interprate the address\n");
+          free( addr_a );
+          free( addr_b );
+          return -1;
+        }
+        // Read requests
+        for( p = 0; p < points_size; p++) {
+          rd_idx = rd_pos[p]
+          fprintf( outfile,
+                   "%s%016" PRIx64 "\n",
+                   "RD:8:0:",
+                   (uint64_t)addr_a[rd_idx] );
+        }
+        // Write request
+        wr_idx = &wr_pos;
+        fprintf( outfile,
+                 "%s%016" PRIx64 "\n",
+                 "WR:8:0:",
+                 (uint64_t)addr_d[wr_idx] );
+      }
+    }
   }
 
   fclose(outfile);
