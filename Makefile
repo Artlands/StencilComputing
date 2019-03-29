@@ -18,9 +18,11 @@ $(SRC)/shiftamt.o: $(SRC)/shiftamt.c
 	$(CC) -c -o $@ $<
 $(SRC)/genrands.o: $(SRC)/genrands.c
 	$(CC) -c -o $@ $<
+$(SRC)/interpradd.o: $(SRC)/interpradd.c
+	$(CC) -c -o $@ $<
 
-stencil_memory: $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o
-	$(CC) -o $@ $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o
+stencil_memory: $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o $(SRC)/interpradd.o
+	$(CC) -o $@ $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o $(SRC)/interpradd.o
 
 clean:
 	rm -Rf ./src/*.o ./scripts/*.out

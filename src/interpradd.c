@@ -21,33 +21,28 @@
                         long size_z,
                         long sten_type )
 {
-  /*
-   * Make sure memory access are valid
-   *
-   */
-   if( i < 0 || j < 0 || k < 0) {
-     return -1;
-   }
-   else if ( i > (size_x - 1) || j > (size_y - 1) || k > (size_z - 1) ) {
-     return -1;
-   }
 
-   switch( sten_type ) {
+  if( rd_pos == NULL) {
+    return -1;
+  }else if( wr_pos == NULL) {
+    return -1;
+  }
+  switch( sten_type ) {
     case 1:
-      if( i = 0) {
-       *rd_pos = size_x - 1;
-        *(rd_pos + 1) = 0;
-        *(rd_pos + 2) = 1;
-      } else if ( i = size_x - 1) {
-        *rd_pos = i - 1;
-        *(rd_pos + 1) = i;
-        *(rd_pos + 2) = 0;
+      if( i == 0) {
+        rd_pos[0] = (uint64_t)(size_x - 1);
+        rd_pos[1] = (uint64_t)0;
+        rd_pos[2] = (uint64_t)1;
+      } else if ( i == size_x - 1) {
+        rd_pos[0] = (uint64_t)(i - 1);
+        rd_pos[1] = (uint64_t)i;
+        rd_pos[2] = (uint64_t)0;
       } else {
-        *rd_pos = i - 1;
-        *(rd_pos + 1) = i;
-        *(rd_pos + 2) = i + 1;
+        rd_pos[0] = (uint64_t)(i - 1);
+        rd_pos[1] = (uint64_t)i;
+        rd_pos[2] = (uint64_t)(i + 1);
       }
-      *wr_pos = i;
+      wr_pos[0] = (uint64_t)(i);
       break;
     case 2:
       break;
@@ -58,6 +53,8 @@
     case 5:
       break;
     case 6:
+      break;
+    default:
       break;
    }
    return 0;

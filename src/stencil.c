@@ -65,8 +65,8 @@ extern int main( int argc, char **argv) {
   long j = 0;
   long k = 0;
   int p = 0;
-  uint64_t rd_idx = 0;
-  uint64_t wr_idx = 0;
+  uint64_t rd_idx = 0x00ll;
+  uint64_t wr_idx = 0x00ll;
 
   /*MEMORY TRACE FILE*/
   // char trace[25];
@@ -225,7 +225,7 @@ extern int main( int argc, char **argv) {
    * Get points size, allocate memory for storing rd_pos
    *
    */
-  switch( type ) {
+  switch( sten_type ) {
     case 1:
       points_size = 3;
       break;
@@ -247,6 +247,7 @@ extern int main( int argc, char **argv) {
     default:
       break;
   }
+
   rd_pos = malloc( sizeof( uint64_t ) * points_size);
   if( rd_pos == NULL ) {
     printf("Failed to allocation memory for storing rd_pos\n");
@@ -254,15 +255,23 @@ extern int main( int argc, char **argv) {
     free( addr_b );
     return -1;
   }
+  wr_pos = malloc( sizeof( uint64_t ) * 1);
+  if( wr_pos == NULL ) {
+    printf("Failed to allocation memory for storing rd_pos\n");
+    free( addr_a );
+    free( addr_b );
+    free( rd_pos );
+    return -1;
+  }
 
   /*
    * Generate memory address of stencil computing
    *
    */
-
-  for ( i = 0; i < size_x; i++) {
-    for ( j = 0; j < size_y; j++) {
-      for( k = 0; k < size_z; k++) {
+  switch( sten_type ) {
+    case 1:
+    case 2:
+      for ( i = 0; i < size_x; i++) {
         // Interpration
         if( interpradd( rd_pos,
                         wr_pos,
@@ -276,25 +285,35 @@ extern int main( int argc, char **argv) {
           printf("Failed to interprate the address\n");
           free( addr_a );
           free( addr_b );
+          free( rd_pos );
+          free( wr_pos );
           return -1;
         }
         // Read requests
         for( p = 0; p < points_size; p++) {
-          rd_idx = rd_pos[p]
+          rd_idx = rd_pos[p];
           fprintf( outfile,
                    "%s%016" PRIx64 "\n",
                    "RD:8:0:",
                    (uint64_t)addr_a[rd_idx] );
         }
         // Write request
-        wr_idx = &wr_pos;
+        wr_idx = wr_pos[0];
         fprintf( outfile,
                  "%s%016" PRIx64 "\n",
                  "WR:8:0:",
-                 (uint64_t)addr_d[wr_idx] );
+                 (uint64_t)addr_b[wr_idx] );
       }
-    }
-  }
+      break;
+    case 3:
+    case 4:
+      break;
+    case 5:
+    case 6:
+      break;
+    default:
+      break;
+ }
 
   fclose(outfile);
   return 0;

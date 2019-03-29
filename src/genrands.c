@@ -11,11 +11,11 @@
 /* ---------------------------------------------- GENERATE ADDRESSES*/
 
 extern int genrands( uint64_t *addr_a,
-                    uint64_t *addr_b,
-                    uint64_t num_req,
-                    uint32_t num_devs,
-                    uint32_t capacity,
-                    uint32_t shiftamt )
+                     uint64_t *addr_b,
+                     uint64_t num_req,
+                     uint32_t num_devs,
+                     uint32_t capacity,
+                     uint32_t shiftamt )
 {
  /* vars */
  long i = 0x00l;
