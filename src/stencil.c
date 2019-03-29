@@ -3,31 +3,6 @@
  *
  * Simulate the memory traces of stencil computing
  *
- * Iteration type : Jacobi Iteration, involve 2 same size arrays: A, B
- *
- * Dimension:1D, 2D, 3D
- *
- * Order: 1
- *
- * Boundary Condition: Periodic,
- * i.e. the element before the first one is the last element in this dimension.
- * the element after the last on is the first element in this dimension.
- *
- * Access types(ignore coefficient):
- * 1D 3-points: B[i] = A[i-1] + A[i] + A[i+1]
- * 1D 5-points: B[i] = A[i-2] + A[i-1] + A[i] + A[i+1] + A[i+2]
- * 2D 5-points: B[i][j] = A[i-1][j] + A[i][j] + A[i+1][j] + A[i][j-1] + A[i][j+1]
- * 2D 9-points: B[i][j] = A[i-1][j] + A[i][j] + A[i+1][j] + A[i][j-1] + A[i][j+1]
- *                        A[i-1][j-1] + A[i+1][j-1] + A[i+1][j-1] + A[i+1][j-+]
- * 3D 7-points: B[i][j][k] = A[i-1][j][k] + A[i][j][k] + A[i+1][j][k] + A[i][j-1][k]
- *                         + A[i][j+1][k] + A[i][j][k-1] + A[i][j][k+1]
- * 3D 27-points: B[i][j][k] = A[i][j][k]
- *                         + (A[i-1][j][k] + A[i+1][j][k] + A[i][j-1][k] + A[i][j+1][k] + A[i][j][k-1] + A[i][j][k+1])
- *                         + (A[i-1][j][k-1] + A[i+1][j][k-1] + A[i][j-1][k-1] + A[i][j+1][k-1]
- *                           +A[i-1][j-1][k] + A[i-1][j+1][k] + A[i+1][j-1][k] + A[i+1][j+1][k]
- *                           +A[i-1][j][k+1] + A[i+1][j][k+1] + A[i][j-1][k+1] + A[i][j+1][k+1])
- *                         + (A[i-1][j-1][k-1] + A[i-1][j+1][k-1] + A[i+1][j-1][k-1] + A[i+1][j+1][k-1]
- *                           +A[i-1][j-1][k+1] + A[i-1][j+1][k+1] + A[i+1][j-1][k+1] + A[i+1][j+1][k+1])
  */
 
  #include <stdio.h>
@@ -42,22 +17,39 @@ extern int getshiftamount ( uint32_t num_links,
  /* ---------------------------------------------- GENRANDS*/
 static int genrands( uint64_t *addr_a,
                      uint64_t *addr_b,
-                     long num_req,
+                     int size_x,
+                     int size_y,
+                     int size_z,
                      uint32_t num_devs,
                      uint32_t capacity,
                      uint32_t shiftamt )
 {
   /* vars */
   long i = 0x00l;
+  long num_req = 0x00l;
   uint64_t base_a = 0x00ll;
   uint64_t base_b = 0x00ll;
   uint64_t offset = 0x00ll;
   /* ---- */
 
+  if (size_x == 0) {
+    return -1;
+  } else if(size_y == 0 && size_z != 0) {
+    return -1;
+  }
+
   if( addr_a == NULL) {
     return -1;
   }else if( addr_b == NULL) {
     return -1;
+  }
+
+  if( size_y == 0) {
+    num_req = (long)size_x;
+  } else if(size_z == 0) {
+    num_req = (long)((long)size_x * (long)size_y);
+  } else {
+    num_req = (long)((long)size_x * (long)size_y * (long)size_z);
   }
 
   /*
@@ -74,7 +66,7 @@ static int genrands( uint64_t *addr_a,
    * Caculate the base of each vector
    *
    */
-  offset = (uint64_t) num_req * 0x08ll;
+  offset = (uint64_t)num_req * 0x08ll;
 
   base_a = (0x00ll) << (uint64_t)(shiftamt);
   base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
