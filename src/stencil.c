@@ -15,6 +15,8 @@
  #include <sys/stat.h>
  #include <fcntl.h>
 
+ #define DEBUG
+
  /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int getshiftamount( uint32_t bsize,
                            uint32_t *shiftamt );
@@ -205,6 +207,9 @@ extern int main( int argc, char **argv) {
     return -1;
   }
 
+#ifdef DEBUG
+  printf("Shift amount: %u\n", shiftamt);
+#endif
   /*
    * Generate memory address of grid
    *

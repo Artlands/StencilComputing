@@ -46,7 +46,7 @@ extern int genrands( uint64_t *addr_a,
   */
  offset = (uint64_t)num_req * 0x08ll;
 
- base_a = (0x00ll) << (uint64_t)(shiftamt);
+ base_a = (0xAFll) << (uint64_t)(shiftamt);
  base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
 
  /*
@@ -55,7 +55,7 @@ extern int genrands( uint64_t *addr_a,
   */
  for( i = 0; i < num_req; i++) {
    addr_a[i] = (uint64_t)( base_a + (((uint64_t)(i) * 0x08ll) << (uint64_t)(shiftamt)) );
-   addr_b[i] = (uint64_t)( base_a + (((uint64_t)(i) * 0x08ll) << (uint64_t)(shiftamt)) );
+   addr_b[i] = (uint64_t)( base_b + (((uint64_t)(i) * 0x08ll) << (uint64_t)(shiftamt)) );
  }
 
  return 0;
