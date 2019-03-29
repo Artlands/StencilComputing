@@ -45,6 +45,26 @@
       wr_pos[0] = (uint64_t)(i);
       break;
     case 2:
+      if( i == 0) {
+        rd_pos[0] = (uint64_t)(size_x - 2);
+        rd_pos[1] = (uint64_t)(size_x - 1);
+        rd_pos[2] = (uint64_t)0;
+        rd_pos[3] = (uint64_t)1;
+        rd_pos[4] = (uint64_t)2;
+      } else if ( i == size_x - 1) {
+        rd_pos[0] = (uint64_t)(i - 2);
+        rd_pos[1] = (uint64_t)(i - 1);
+        rd_pos[2] = (uint64_t)i;
+        rd_pos[3] = (uint64_t)0;
+        rd_pos[4] = (uint64_t)1;
+      } else {
+        rd_pos[0] = (uint64_t)(i - 2);
+        rd_pos[1] = (uint64_t)(i - 1);
+        rd_pos[2] = (uint64_t)i;
+        rd_pos[3] = (uint64_t)(i + 1);
+        rd_pos[4] = (uint64_t)(i + 2);
+      }
+      wr_pos[0] = (uint64_t)(i);
       break;
     case 3:
       break;
