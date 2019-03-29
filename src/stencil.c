@@ -10,6 +10,7 @@
  #include <unistd.h>
  #include <string.h>
  #include <stdint.h>
+ #include <inttypes.h>
  #include <sys/types.h>
  #include <sys/stat.h>
  #include <fcntl.h>
@@ -151,7 +152,7 @@ extern int main( int argc, char **argv) {
   }
   /* ---- */
 
-  outfile = fopen( filename, w);
+  outfile = fopen( filename, "w");
   if( outfile == NULL) {
     printf("ERROR: Could not open file %s\n", filename);
     return -1;
@@ -200,12 +201,12 @@ extern int main( int argc, char **argv) {
    * Generate memory address of grid
    *
    */
-  if( genrands( uint64_t addr_a,
-                uint64_t addr_b,
-                uint64_t num_req,
-                uint32_t num_devs,
-                uint32_t capacity,
-                uint32_t shiftamt ) != 0) {
+  if( genrands( addr_a,
+                addr_b,
+                num_req,
+                num_devs,
+                capacity,
+                shiftamt ) != 0) {
     printf("Failed to generate addressing schema\n");
     free( addr_a );
     free( addr_b );
@@ -217,12 +218,13 @@ extern int main( int argc, char **argv) {
    *
    */
   for ( i = 0; i < num_req; i++) {
-    //RD:8:0:0x0000000000000000
+    // RD:8:0:0x0000000000000000
     fprintf( outfile,
              "%s%"PRIu64"\n",
              "RD:8:0:",
-             addr_a[i])
+             addr_a[i] );
   }
+
   fclose(outfile);
   return 0;
 }

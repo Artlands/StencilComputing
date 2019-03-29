@@ -19,8 +19,8 @@ $(SRC)/shiftamt.o: $(SRC)/shiftamt.c
 $(SRC)/genrands.o: $(SRC)/genrands.c
 	$(CC) -c -o $@ $<
 
-stencil_memory: $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)genrands.o
-	$(CC) -o $@ $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)genrands.o
+stencil_memory: $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o
+	$(CC) -o $@ $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o
 
 clean:
 	rm -Rf ./src/*.o
