@@ -14,6 +14,7 @@
  #include <sys/types.h>
  #include <sys/stat.h>
  #include <fcntl.h>
+ #include "pims_struct.h"
 
  #define DEBUG
 
@@ -30,6 +31,7 @@ extern int genrands( uint64_t *addr_a,
 
 extern int interpradd( uint64_t *rd_pos,
                        uint64_t *wr_pos,
+                       uint64_t *lc_pos,
                        long i,
                        long j,
                        long k,
@@ -37,6 +39,11 @@ extern int interpradd( uint64_t *rd_pos,
                        long size_y,
                        long size_z,
                        long sten_type );
+
+extern int getpimsid (int *pimsid,
+                      uint64_t addr,
+                      uint32_t shiftamt,
+                      uint32_t num_vaults);
 /* ------------------------------------------------------------ MAIN */
 /*
  * MAIN
@@ -50,6 +57,7 @@ extern int main( int argc, char **argv) {
   uint32_t bsize = 0;
   uint32_t capacity = 0;
   uint32_t num_devs = 0;
+  uint32_t num_vaults = 0;
   uint32_t shiftamt = 0;
 
   /*STENCIL GRID*/
@@ -71,15 +79,24 @@ extern int main( int argc, char **argv) {
   uint64_t wr_idx = 0x00ll;
 
   /*MEMORY TRACE FILE*/
-  // char trace[25];
   FILE *outfile = NULL;
   char filename[1024];
   int points_size = 0;
   uint64_t *rd_pos = NULL;
   uint64_t *wr_pos = NULL;
+  uint64_t *lc_pos = NULL;
+
+  /*PIMS*/
+  int *pimsid = NULL;
+  int cur_id = 0;
+  uint32_t buf_size = 0;
+  uint32_t cur_insize = 0;
+  uint32_t cur_outsize = 0;
+  uint64_t pims_addr = 0x00ll;
+  struct pimsbuf *pims_buf = NULL;
   /* ---- */
 
-  while( (ret = getopt( argc, argv, "b:c:d:ht:x:y:z:F:")) != -1 ) {
+  while( (ret = getopt( argc, argv, "b:c:d:f:ht:v:x:y:z:F:")) != -1 ) {
     switch( ret ) {
       case 'b':
         bsize = (uint32_t)(atoi(optarg));
@@ -90,23 +107,31 @@ extern int main( int argc, char **argv) {
       case 'd':
         num_devs = (uint32_t)(atoi(optarg));
         break;
+      case 'f':
+        buf_size = (uint32_t)(atoi(optarg));
+        break;
       case 'F':
         sprintf( filename, "%s", optarg);
         break;
       case 'h':
-        printf("%s%s%s\n","usage : ", argv[0], " -bcdhltxyzF" );
+        printf("%s%s%s\n","usage : ", argv[0], " -bcdhltvxyzF" );
         printf(" -b <block_size>\n");
         printf(" -c <capacity>\n");
         printf(" -d <num_devs>\n");
         printf(" -h ...print help\n");
         printf(" -t <sten_type>\n");
+        printf(" -v <num_vaults>\n");
         printf(" -x <size_x>\n");
         printf(" -x <size_y>\n");
         printf(" -z <size_z>\n");
+        printf(" -F <output trace file>\n");
         return 0;
         break;
       case 't':
         sten_type = (int)(atoi(optarg));
+        break;
+      case 'v':
+        num_vaults = (uint32_t)(atoi(optarg));
         break;
       case 'x':
         size_x = (long)(atoi(optarg));
@@ -260,6 +285,7 @@ extern int main( int argc, char **argv) {
     free( addr_b );
     return -1;
   }
+
   wr_pos = malloc( sizeof( uint64_t ) * 1);
   if( wr_pos == NULL ) {
     printf("Failed to allocation memory for storing rd_pos\n");
@@ -267,6 +293,76 @@ extern int main( int argc, char **argv) {
     free( addr_b );
     free( rd_pos );
     return -1;
+  }
+
+  lc_pos = malloc( sizeof( uint64_t ) * 1);
+  if( lc_pos == NULL ) {
+    printf("Failed to allocation memory for storing lc_pos\n");
+    free( addr_a );
+    free( addr_b );
+    free( rd_pos );
+    free( wr_pos );
+    return -1;
+  }
+
+  pimsid = malloc( sizeof( int ) * 1);
+  if( pimsid == NULL ) {
+    printf("Failed to allocation memory for pimsid\n");
+    free( addr_a );
+    free( addr_b );
+    free( rd_pos );
+    free( wr_pos );
+    free( lc_pos );
+    return -1;
+  }
+
+  pims_buf = malloc( sizeof( struct pimsbuf ) * num_vaults);
+  if( pims_buf == NULL ) {
+    printf("Failed to allocation memory for pims_buf\n");
+    free( addr_a );
+    free( addr_b );
+    free( rd_pos );
+    free( wr_pos );
+    free( lc_pos );
+    free( pimsid );
+    return -1;
+  }
+
+  /*
+   * Initialize pims_buf
+   *
+   */
+  for( i = 0; i < num_vaults; i++) {
+    pims_buf[i].pimsid = i;
+    pims_buf[i].in_size = 0;
+    pims_buf[i].out_size = 0;
+    pims_buf[i].in_addr = NULL;
+    pims_buf[i].out_addr = NULL;
+    pims_buf[i].in_addr = malloc( sizeof( uint64_t ) * buf_size);
+    if( pims_buf[i].in_addr == NULL ) {
+      printf("Failed to allocation memory for each buffer\n");
+      free( addr_a );
+      free( addr_b );
+      free( rd_pos );
+      free( wr_pos );
+      free( lc_pos );
+      free( pimsid );
+      free( pims_buf );
+      return -1;
+    }
+    pims_buf[i].out_addr = malloc( sizeof( uint64_t ) * buf_size);
+    if( pims_buf[i].out_addr == NULL ) {
+      printf("Failed to allocation memory for each buffer\n");
+      free( addr_a );
+      free( addr_b );
+      free( rd_pos );
+      free( wr_pos );
+      free( lc_pos );
+      free( pimsid );
+      free( pims_buf );
+      free( pims_buf[i].in_addr );
+      return -1;
+    }
   }
 
   /*
@@ -280,6 +376,7 @@ extern int main( int argc, char **argv) {
         // Interpration
         if( interpradd( rd_pos,
                         wr_pos,
+                        lc_pos,
                         i,
                         j,
                         k,
@@ -294,20 +391,45 @@ extern int main( int argc, char **argv) {
           free( wr_pos );
           return -1;
         }
-        // Read requests
+        // Get pimsid
+        pims_addr = (uint64_t)addr_a[lc_pos[0]];
+        if( getpimsid( pimsid,
+                       pims_addr,
+                       shiftamt,
+                       num_vaults) != 0 ) {
+          printf("Failed to get PIMS id\n");
+        }
+        cur_id = *pimsid;
+
+#ifdef DEBUG
+        printf("PIMS id: %d\n", *pimsid);
+#endif
+
+        // Read requests and save them to pims_buf
         for( p = 0; p < points_size; p++) {
+          // Get current buffer size
+          cur_insize = pims_buf[cur_id].in_size;
+
           rd_idx = rd_pos[p];
-          fprintf( outfile,
-                   "%s%016" PRIX64 "\n",
-                   "RD:8:0:0x",
-                   (uint64_t)addr_a[rd_idx] );
+
+          if( cur_insize == buf_size - 1) {
+            // Coalesce and build memory request,
+            // reset buffer and save the current address to buffer
+          } else {
+            // Push memory requests to PIMS buffer
+            pims_buf[cur_id].in_size ++;
+          }
+          // fprintf( outfile,
+          //          "%s%016" PRIX64 "\n",
+          //          "RD:8:0:0x",
+          //          (uint64_t)addr_a[rd_idx] );
         }
         // Write request
         wr_idx = wr_pos[0];
-        fprintf( outfile,
-                 "%s%016" PRIX64 "\n",
-                 "WR:8:0:0x",
-                 (uint64_t)addr_b[wr_idx] );
+        // fprintf( outfile,
+        //          "%s%016" PRIX64 "\n",
+        //          "WR:8:0:0x",
+        //          (uint64_t)addr_b[wr_idx] );
       }
       break;
     case 3:
@@ -317,6 +439,7 @@ extern int main( int argc, char **argv) {
           // Interpration
           if( interpradd( rd_pos,
                           wr_pos,
+                          lc_pos,
                           i,
                           j,
                           k,
@@ -356,6 +479,7 @@ extern int main( int argc, char **argv) {
             // Interpration
             if( interpradd( rd_pos,
                             wr_pos,
+                            lc_pos,
                             i,
                             j,
                             k,

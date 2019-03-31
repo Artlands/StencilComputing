@@ -13,6 +13,7 @@
  /* ---------------------------------------------- INTERPRADD*/
  extern int interpradd( uint64_t *rd_pos,
                         uint64_t *wr_pos,
+                        uint64_t *lc_pos,
                         long i,
                         long j,
                         long k,
@@ -71,8 +72,6 @@
     k_rel_p = k + 1;
   }
 
-
-
   switch( sten_type ) {
     case 1:
       // 1D 3-points
@@ -80,8 +79,12 @@
       rd_pos[0] = (uint64_t)(i_rel_n);
       rd_pos[1] = (uint64_t)i;
       rd_pos[2] = (uint64_t)(i_rel_p);
+
       // write position
       wr_pos[0] = (uint64_t)(i);
+
+      // local position
+      lc_pos[0] = (uint64_t)(i);
       break;
     case 2:
       // 1D 5-points
@@ -106,6 +109,9 @@
       rd_pos[4] = (uint64_t)(i_rel_p);
       // write position
       wr_pos[0] = (uint64_t)(i);
+
+      // local position
+      lc_pos[0] = (uint64_t)(i);
       break;
     case 3:
       // 2D 5-points
@@ -124,7 +130,10 @@
       rd_pos[4] = (uint64_t)(i * size_x + j_rel_p);
 
       // write position
-      wr_pos[0] = (uint64_t)(i);
+      wr_pos[0] = (uint64_t)(i * size_x + j);
+
+      // local position
+      lc_pos[0] = (uint64_t)(i * size_x + j);
       break;
     case 4:
       // 2D 9-points
@@ -152,6 +161,9 @@
 
       // write position
       wr_pos[0] = (uint64_t)(i);
+
+      // local position
+      lc_pos[0] = (uint64_t)(i * size_x + j);
       break;
     case 5:
       // 3D 7-points
@@ -175,7 +187,10 @@
       rd_pos[6] = (uint64_t)(k_rel_p + size_z * ( j + size_y * i ));
 
       // write position
-      wr_pos[0] = (uint64_t)(i);
+      wr_pos[0] = (uint64_t)(k + size_z * ( j + size_y * i));
+
+      // local position
+      lc_pos[0] = (uint64_t)(k + size_z * ( j + size_y * i));
       break;
     case 6:
       // 3D 27-points
@@ -237,6 +252,12 @@
       rd_pos[25] = (uint64_t)(k_rel_p + size_z * ( j_rel_n + size_y * i_rel_p ));
       // A[i+1][j+1][k+1]
       rd_pos[26] = (uint64_t)(k_rel_p + size_z * ( j_rel_p + size_y * i_rel_p ));
+
+      // write position
+      wr_pos[0] = (uint64_t)(k + size_z * ( j + size_y * i));
+
+      // local position
+      lc_pos[0] = (uint64_t)(k + size_z * ( j + size_y * i));
       break;
     default:
       break;
