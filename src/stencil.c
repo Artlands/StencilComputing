@@ -298,23 +298,95 @@ extern int main( int argc, char **argv) {
         for( p = 0; p < points_size; p++) {
           rd_idx = rd_pos[p];
           fprintf( outfile,
-                   "%s%016" PRIx64 "\n",
-                   "RD:8:0:",
+                   "%s%016" PRIX64 "\n",
+                   "RD:8:0:0x",
                    (uint64_t)addr_a[rd_idx] );
         }
         // Write request
         wr_idx = wr_pos[0];
         fprintf( outfile,
-                 "%s%016" PRIx64 "\n",
-                 "WR:8:0:",
+                 "%s%016" PRIX64 "\n",
+                 "WR:8:0:0x",
                  (uint64_t)addr_b[wr_idx] );
       }
       break;
     case 3:
     case 4:
+      for ( i = 0; i < size_x; i++) {
+        for (j = 0; j < size_y; j ++) {
+          // Interpration
+          if( interpradd( rd_pos,
+                          wr_pos,
+                          i,
+                          j,
+                          k,
+                          size_x,
+                          size_y,
+                          size_z,
+                          sten_type) != 0) {
+            printf("Failed to interprate the address\n");
+            free( addr_a );
+            free( addr_b );
+            free( rd_pos );
+            free( wr_pos );
+            return -1;
+          }
+          // Read requests
+          for( p = 0; p < points_size; p++) {
+            rd_idx = rd_pos[p];
+            fprintf( outfile,
+                     "%s%016" PRIX64 "\n",
+                     "RD:8:0:0x",
+                     (uint64_t)addr_a[rd_idx] );
+          }
+          // Write request
+          wr_idx = wr_pos[0];
+          fprintf( outfile,
+                   "%s%016" PRIX64 "\n",
+                   "WR:8:0:0x",
+                   (uint64_t)addr_b[wr_idx] );
+        }
+      }
       break;
     case 5:
     case 6:
+      for ( i = 0; i < size_x; i++) {
+        for (j = 0; j < size_y; j++) {
+          for ( k = 0; k < size_z; k++) {
+            // Interpration
+            if( interpradd( rd_pos,
+                            wr_pos,
+                            i,
+                            j,
+                            k,
+                            size_x,
+                            size_y,
+                            size_z,
+                            sten_type) != 0) {
+              printf("Failed to interprate the address\n");
+              free( addr_a );
+              free( addr_b );
+              free( rd_pos );
+              free( wr_pos );
+              return -1;
+            }
+            // Read requests
+            for( p = 0; p < points_size; p++) {
+              rd_idx = rd_pos[p];
+              fprintf( outfile,
+                       "%s%016" PRIX64 "\n",
+                       "RD:8:0:0x",
+                       (uint64_t)addr_a[rd_idx] );
+            }
+            // Write request
+            wr_idx = wr_pos[0];
+            fprintf( outfile,
+                     "%s%016" PRIX64 "\n",
+                     "WR:8:0:0x",
+                     (uint64_t)addr_b[wr_idx] );
+          }
+        }
+      }
       break;
     default:
       break;

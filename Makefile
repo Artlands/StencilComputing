@@ -5,8 +5,6 @@
 #
 # ---------------------------------------
 
-#-- CC
-#-- C COMPILER
 CC=gcc
 
 SRC = ./src
@@ -24,5 +22,7 @@ $(SRC)/interpradd.o: $(SRC)/interpradd.c
 stencil_memory: $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o $(SRC)/interpradd.o
 	$(CC) -o $@ $(SRC)/stencil.o $(SRC)/shiftamt.o $(SRC)/genrands.o $(SRC)/interpradd.o
 
+cleanout:
+	rm -Rf ./scripts/*.out
 clean:
-	rm -Rf ./src/*.o ./scripts/*.out
+	rm -Rf ./src/*.o
