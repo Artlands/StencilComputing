@@ -354,6 +354,9 @@ extern int main( int argc, char **argv) {
     for( j = 0; j < num_vaults; j++) {
       pims_buf[i].out_addr[j].flitid = j;
       pims_buf[i].out_addr[j].size = 0;
+      for ( k = 0; k < 16; k++) {
+        pims_buf[i].out_addr[j].addr[k] = 0x00ll;
+      }
     }
   }
 

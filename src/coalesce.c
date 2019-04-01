@@ -43,8 +43,6 @@ extern int joinrqst( uint64_t addr,
   int out_flitsize = 0;
   *pim_rd_count_tmp = 0;
 
-  cur_insize = pims_buf[cur_id].in_size;
-
   /* Sanity Check */
   if( pims_buf == NULL || outfile == NULL) {
     return -1;
@@ -56,15 +54,14 @@ extern int joinrqst( uint64_t addr,
     return -1;
   }
 
-  if( (cur_insize < buf_size - 1) && (flag == 0) ) {
-    // Insert current address to in_addr buffer
-    pims_buf[cur_id].in_addr[cur_insize] = addr;
-    pims_buf[cur_id].in_size ++;
-
-  } else {
-    // cur_insize = buf_size - 1, i.e. in_addr buffer is full
-    // Colease the addresses
-    for ( i = 0; i < buf_size; i++) {
+  if( (pims_buf[cur_id].in_size == (buf_size - 1)) || (flag == 1) ) {
+    /*
+     * in_addr buffer is full or requests from CUP are all sent
+     *
+     * Colease the addresses
+     *
+     */
+    for ( i = 0; i < pims_buf[cur_id].in_size; i++) {
 
       // Get PIMS id of the memory request destination
       tmpaddr = pims_buf[cur_id].in_addr[i];
@@ -76,31 +73,48 @@ extern int joinrqst( uint64_t addr,
       }
       tmpid = *pimsid;
 
-      // Check if out_addr buffer of tmpid is full
-      out_flitindex = pims_buf[cur_id].out_addr[tmpid].size;
-      if( out_flitindex < (16 - 1) && (flag == 0) ) {
+      /*
+       * Check if out_addr buffer of tmpid is full
+       *
+       */
+      if( (pims_buf[cur_id].out_addr[tmpid].size == 15) || (flag == 1)) {
+
+        out_flitsize = pims_buf[cur_id].out_addr[tmpid].size + 1;
+        
+        if( pims_buf[cur_id].out_addr[tmpid].addr[0] != 0x00ll ) {
+          fprintf( outfile,
+                   "%s%d%s%016" PRIX64 "\n",
+                   "RD:",
+                   out_flitsize,
+                   ":0:0x",
+                   (uint64_t)pims_buf[cur_id].out_addr[tmpid].addr[0]);
+          *pim_rd_count_tmp += 1;
+        }
+        pims_buf[cur_id].out_addr[tmpid].size = 0;
+
+
+        if( flag == 0 ) {
+          pims_buf[cur_id].out_addr[tmpid].addr[out_flitindex] = tmpaddr;
+          pims_buf[cur_id].out_addr[tmpid].size ++;
+        }
+
+      }else {
+
         pims_buf[cur_id].out_addr[tmpid].addr[out_flitindex] = tmpaddr;
         pims_buf[cur_id].out_addr[tmpid].size ++;
         *pim_rd_count_tmp += 0;
-      } else {
-        out_flitsize = out_flitindex + 1;
-        fprintf( outfile,
-                 "%s%d%s%016" PRIX64 "\n",
-                 "RD:",
-                 out_flitsize,
-                 ":0:0x",
-                 (uint64_t)pims_buf[cur_id].out_addr[tmpid].addr[0]);
-        *pim_rd_count_tmp += 1;
-        pims_buf[cur_id].out_addr[tmpid].size = 0;
-        out_flitindex = 0;
-        pims_buf[cur_id].out_addr[tmpid].addr[out_flitindex] = tmpaddr;
-        pims_buf[cur_id].out_addr[tmpid].size ++;
+
       }
     }
 
     // Reset in_size,
     pims_buf[cur_id].in_size = 0;
     cur_insize = 0;
+    pims_buf[cur_id].in_addr[cur_insize] = addr;
+    pims_buf[cur_id].in_size ++;
+
+  } else {
+    // Insert current address to in_addr buffer
     pims_buf[cur_id].in_addr[cur_insize] = addr;
     pims_buf[cur_id].in_size ++;
   }
