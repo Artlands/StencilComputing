@@ -18,7 +18,7 @@
 
  #define DEBUG
 
- /* ---------------------------------------------- FUNCTION PROTOTYPES*/
+/* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int getshiftamount( uint32_t bsize,
                            uint32_t *shiftamt );
 
@@ -40,10 +40,29 @@ extern int interpradd( uint64_t *rd_pos,
                        long size_z,
                        long sten_type );
 
-extern int getpimsid (int *pimsid,
+extern int getpimsid( uint32_t *pimsid,
                       uint64_t addr,
                       uint32_t shiftamt,
                       uint32_t num_vaults);
+
+extern int joinrqst( uint64_t addr,
+                     uint32_t shiftamt,
+                     uint32_t num_vaults,
+                     uint32_t buf_size,
+                     struct pimsbuf *pims_buf,
+                     uint32_t cur_id,
+                     int flag,
+                     uint64_t *pim_rd_count_tmp,
+                     FILE *outfile);
+
+/* ------------------------------------------------------------ FREEBUF*/
+static void freebuf( struct pimsbuf *pimsbuf, uint32_t num_vaults) {
+  uint32_t i = 0;
+  for( i = 0; i < num_vaults; i++) {
+    free(pimsbuf[i].in_addr);
+    free(pimsbuf[i].out_addr);
+  }
+}
 /* ------------------------------------------------------------ MAIN */
 /*
  * MAIN
@@ -62,19 +81,18 @@ extern int main( int argc, char **argv) {
 
   /*STENCIL GRID*/
   int sten_type = 0;
-  long size_x = 0;
-  long size_y = 0;
-  long size_z = 0;
+  long size_x = 0x00l;
+  long size_y = 0x00l;
+  long size_z = 0x00l;
   uint64_t num_req;
   // uint64_t *addr_arr = NULL;
   uint64_t *addr_a = NULL;
   uint64_t *addr_b = NULL;
 
   /*STENCIL COMPUTING*/
-  long i = 0;
-  long j = 0;
-  long k = 0;
-  int p = 0;
+  long i = 0x00l;
+  long j = 0x00l;
+  long k = 0x00l;
   uint64_t rd_idx = 0x00ll;
   uint64_t wr_idx = 0x00ll;
 
@@ -82,18 +100,22 @@ extern int main( int argc, char **argv) {
   FILE *outfile = NULL;
   char filename[1024];
   int points_size = 0;
+  int p = 0;
   uint64_t *rd_pos = NULL;
   uint64_t *wr_pos = NULL;
   uint64_t *lc_pos = NULL;
 
   /*PIMS*/
-  int *pimsid = NULL;
-  int cur_id = 0;
-  uint32_t buf_size = 0;
-  uint32_t cur_insize = 0;
-  uint32_t cur_outsize = 0;
+  int flag = 0;                   // Indicate whether the send requests from CPU are done
+  uint32_t *pimsid = NULL;
+  uint32_t cur_id = 0x00l;
+  uint32_t buf_size = 0x00l;
   uint64_t pims_addr = 0x00ll;
   struct pimsbuf *pims_buf = NULL;
+  uint64_t row_rd_count = 0x00ll;
+  uint64_t pim_rd_count = 0x00ll;
+  uint64_t *pim_rd_count_tmp = NULL;
+  uint64_t wr_count = 0x00ll;
   /* ---- */
 
   while( (ret = getopt( argc, argv, "b:c:d:f:ht:v:x:y:z:F:")) != -1 ) {
@@ -118,6 +140,7 @@ extern int main( int argc, char **argv) {
         printf(" -b <block_size>\n");
         printf(" -c <capacity>\n");
         printf(" -d <num_devs>\n");
+        printf(" -f <buf_size>\n");
         printf(" -h ...print help\n");
         printf(" -t <sten_type>\n");
         printf(" -v <num_vaults>\n");
@@ -217,8 +240,7 @@ extern int main( int argc, char **argv) {
   addr_b = malloc( sizeof(uint64_t) * num_req);
   if( addr_b == NULL) {
    printf("Failed to allocate memory for addr_b\n");
-   free( addr_a );
-   return -1;
+   goto cleanup;
   }
 
   /*
@@ -227,9 +249,7 @@ extern int main( int argc, char **argv) {
    */
   if( getshiftamount( bsize, &shiftamt) != 0 ) {
     printf("Failed to retrive shift amount\n");
-    free( addr_a );
-    free( addr_b );
-    return -1;
+    goto cleanup;
   }
 
 #ifdef DEBUG
@@ -246,9 +266,7 @@ extern int main( int argc, char **argv) {
                 capacity,
                 shiftamt ) != 0) {
     printf("Failed to generate addressing schema\n");
-    free( addr_a );
-    free( addr_b );
-    return -1;
+    goto cleanup;
   }
 
   /*
@@ -281,51 +299,36 @@ extern int main( int argc, char **argv) {
   rd_pos = malloc( sizeof( uint64_t ) * points_size);
   if( rd_pos == NULL ) {
     printf("Failed to allocation memory for storing rd_pos\n");
-    free( addr_a );
-    free( addr_b );
-    return -1;
+    goto cleanup;
   }
 
   wr_pos = malloc( sizeof( uint64_t ) * 1);
   if( wr_pos == NULL ) {
     printf("Failed to allocation memory for storing rd_pos\n");
-    free( addr_a );
-    free( addr_b );
-    free( rd_pos );
-    return -1;
+    goto cleanup;
   }
 
   lc_pos = malloc( sizeof( uint64_t ) * 1);
   if( lc_pos == NULL ) {
     printf("Failed to allocation memory for storing lc_pos\n");
-    free( addr_a );
-    free( addr_b );
-    free( rd_pos );
-    free( wr_pos );
-    return -1;
+    goto cleanup;
   }
 
-  pimsid = malloc( sizeof( int ) * 1);
+  pimsid = malloc( sizeof( uint32_t ) * 1);
   if( pimsid == NULL ) {
     printf("Failed to allocation memory for pimsid\n");
-    free( addr_a );
-    free( addr_b );
-    free( rd_pos );
-    free( wr_pos );
-    free( lc_pos );
-    return -1;
+    goto cleanup;
   }
 
   pims_buf = malloc( sizeof( struct pimsbuf ) * num_vaults);
   if( pims_buf == NULL ) {
     printf("Failed to allocation memory for pims_buf\n");
-    free( addr_a );
-    free( addr_b );
-    free( rd_pos );
-    free( wr_pos );
-    free( lc_pos );
-    free( pimsid );
-    return -1;
+    goto cleanup;
+  }
+  pim_rd_count_tmp = malloc( sizeof( uint64_t ) * 1);
+  if( pim_rd_count_tmp == NULL ) {
+    printf("Failed to allocation memory for storing pim read requests counts\n");
+    goto cleanup;
   }
 
   /*
@@ -334,34 +337,23 @@ extern int main( int argc, char **argv) {
    */
   for( i = 0; i < num_vaults; i++) {
     pims_buf[i].pimsid = i;
-    pims_buf[i].in_size = 0;
-    pims_buf[i].out_size = 0;
+    pims_buf[i].in_size = 0x00l;
+    pims_buf[i].out_size = 0x00l;
     pims_buf[i].in_addr = NULL;
     pims_buf[i].out_addr = NULL;
     pims_buf[i].in_addr = malloc( sizeof( uint64_t ) * buf_size);
     if( pims_buf[i].in_addr == NULL ) {
       printf("Failed to allocation memory for each buffer\n");
-      free( addr_a );
-      free( addr_b );
-      free( rd_pos );
-      free( wr_pos );
-      free( lc_pos );
-      free( pimsid );
-      free( pims_buf );
-      return -1;
+      goto cleanup;
     }
-    pims_buf[i].out_addr = malloc( sizeof( uint64_t ) * buf_size);
+    pims_buf[i].out_addr = malloc( sizeof( struct flit ) * num_vaults);
     if( pims_buf[i].out_addr == NULL ) {
       printf("Failed to allocation memory for each buffer\n");
-      free( addr_a );
-      free( addr_b );
-      free( rd_pos );
-      free( wr_pos );
-      free( lc_pos );
-      free( pimsid );
-      free( pims_buf );
-      free( pims_buf[i].in_addr );
-      return -1;
+      goto cleanup;
+    }
+    for( j = 0; j < num_vaults; j++) {
+      pims_buf[i].out_addr[j].flitid = j;
+      pims_buf[i].out_addr[j].size = 0;
     }
   }
 
@@ -373,6 +365,9 @@ extern int main( int argc, char **argv) {
     case 1:
     case 2:
       for ( i = 0; i < size_x; i++) {
+        if( i == (size_x - 1)) {
+          flag = 1;
+        }
         // Interpration
         if( interpradd( rd_pos,
                         wr_pos,
@@ -385,11 +380,7 @@ extern int main( int argc, char **argv) {
                         size_z,
                         sten_type) != 0) {
           printf("Failed to interprate the address\n");
-          free( addr_a );
-          free( addr_b );
-          free( rd_pos );
-          free( wr_pos );
-          return -1;
+          goto cleanup;
         }
         // Get pimsid
         pims_addr = (uint64_t)addr_a[lc_pos[0]];
@@ -401,73 +392,44 @@ extern int main( int argc, char **argv) {
         }
         cur_id = *pimsid;
 
-#ifdef DEBUG
-        printf("PIMS id: %d\n", *pimsid);
-#endif
-
-        // Read requests and save them to pims_buf
         for( p = 0; p < points_size; p++) {
-          // Get current buffer size
-          cur_insize = pims_buf[cur_id].in_size;
-
+          row_rd_count ++;
           rd_idx = rd_pos[p];
-
-          if( cur_insize == buf_size - 1) {
-            // Coalesce and build memory request,
-            // reset buffer and save the current address to buffer
-          } else {
-            // Push memory requests to PIMS buffer
-            pims_buf[cur_id].in_size ++;
+          if ( joinrqst( (uint64_t)addr_a[rd_idx],
+                         shiftamt,
+                         num_vaults,
+                         buf_size,
+                         pims_buf,
+                         cur_id,
+                         flag,
+                         pim_rd_count_tmp,
+                         outfile) != 0) {
+            printf("Failed to coalesce the address\n");
           }
-          // fprintf( outfile,
-          //          "%s%016" PRIX64 "\n",
-          //          "RD:8:0:0x",
-          //          (uint64_t)addr_a[rd_idx] );
         }
-        // Write request
-        wr_idx = wr_pos[0];
-        // fprintf( outfile,
-        //          "%s%016" PRIX64 "\n",
-        //          "WR:8:0:0x",
-        //          (uint64_t)addr_b[wr_idx] );
+        wr_count ++;
+
+#ifdef DEBUG
+        printf("PIMS Current id: %d\n",cur_id);
+        printf(  "%s%016" PRIX64 "\n",
+                 "Current address:",
+                 pims_addr);
+        fprintf( outfile,
+                 "%s%016" PRIX64 "\n",
+                 "RD:8:0:0x",
+                 (uint64_t)pims_addr );
+#endif
       }
+      pim_rd_count = *pim_rd_count_tmp;
+      printf("ROW READ REQUESTS COUNT: %" PRIu64 "\n",row_rd_count);
+      printf("PIM READ REQUESTS COUNT: %" PRIu64 "\n",pim_rd_count);
+      printf("WRITE REQUESTS COUNT: %" PRIu64 "\n",row_rd_count);
       break;
     case 3:
     case 4:
       for ( i = 0; i < size_x; i++) {
         for (j = 0; j < size_y; j ++) {
-          // Interpration
-          if( interpradd( rd_pos,
-                          wr_pos,
-                          lc_pos,
-                          i,
-                          j,
-                          k,
-                          size_x,
-                          size_y,
-                          size_z,
-                          sten_type) != 0) {
-            printf("Failed to interprate the address\n");
-            free( addr_a );
-            free( addr_b );
-            free( rd_pos );
-            free( wr_pos );
-            return -1;
-          }
-          // Read requests
-          for( p = 0; p < points_size; p++) {
-            rd_idx = rd_pos[p];
-            fprintf( outfile,
-                     "%s%016" PRIX64 "\n",
-                     "RD:8:0:0x",
-                     (uint64_t)addr_a[rd_idx] );
-          }
-          // Write request
-          wr_idx = wr_pos[0];
-          fprintf( outfile,
-                   "%s%016" PRIX64 "\n",
-                   "WR:8:0:0x",
-                   (uint64_t)addr_b[wr_idx] );
+          // Function
         }
       }
       break;
@@ -476,38 +438,7 @@ extern int main( int argc, char **argv) {
       for ( i = 0; i < size_x; i++) {
         for (j = 0; j < size_y; j++) {
           for ( k = 0; k < size_z; k++) {
-            // Interpration
-            if( interpradd( rd_pos,
-                            wr_pos,
-                            lc_pos,
-                            i,
-                            j,
-                            k,
-                            size_x,
-                            size_y,
-                            size_z,
-                            sten_type) != 0) {
-              printf("Failed to interprate the address\n");
-              free( addr_a );
-              free( addr_b );
-              free( rd_pos );
-              free( wr_pos );
-              return -1;
-            }
-            // Read requests
-            for( p = 0; p < points_size; p++) {
-              rd_idx = rd_pos[p];
-              fprintf( outfile,
-                       "%s%016" PRIX64 "\n",
-                       "RD:8:0:0x",
-                       (uint64_t)addr_a[rd_idx] );
-            }
-            // Write request
-            wr_idx = wr_pos[0];
-            fprintf( outfile,
-                     "%s%016" PRIX64 "\n",
-                     "WR:8:0:0x",
-                     (uint64_t)addr_b[wr_idx] );
+            // Function
           }
         }
       }
@@ -516,6 +447,15 @@ extern int main( int argc, char **argv) {
       break;
  }
 
+cleanup:
+  free( addr_a );
+  free( addr_b );
+  free( rd_pos );
+  free( wr_pos );
+  free( lc_pos );
+  free( pimsid );
+  freebuf( pims_buf, num_vaults );
+  free( pims_buf );
   fclose(outfile);
   return 0;
 }

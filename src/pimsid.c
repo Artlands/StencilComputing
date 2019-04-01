@@ -10,7 +10,7 @@
 
 /* --------------------------------------------- GETSHIFTAMOUNT */
 
-extern int getpimsid (int *pimsid,
+extern int getpimsid (uint32_t *pimsid,
                       uint64_t addr,
                       uint32_t shiftamt,
                       uint32_t num_vaults)
@@ -22,10 +22,10 @@ extern int getpimsid (int *pimsid,
   switch( num_vaults )
   {
     case 32:
-      *pimsid = (int) ((addr >> shiftamt) & 0x1F);
+      *pimsid = (uint32_t) ((addr >> shiftamt) & 0x1F);
       break;
     case 16:
-      *pimsid = (int) ((addr >> shiftamt) & 0xF);
+      *pimsid = (uint32_t) ((addr >> shiftamt) & 0xF);
       break;
     default:
       return -1;
