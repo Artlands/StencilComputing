@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
         printf(" -x <stencil grid size on dim x>\n");
         printf(" -y <stencil grid size on dim y>\n");
         printf(" -z <stencil grid size on dim z>\n");
-        printf(" -t <stencil grid data type: Integer, Float, Double>\n");
+        printf(" -t <stencil grid data type: Integer, Double>\n");
         printf(" -f <output trace file name>\n");
         printf(" h ...print help\n");
         return 0;
@@ -239,6 +239,61 @@ int main(int argc, char* argv[])
       break;
   }
   /* End Allocation */
+
+  /* Try to print out memory address*/
+  switch (data_type[0])
+  {
+    case 'i':
+    case 'I':
+      switch(dim)
+      {
+        case 1:
+          printf("%\n", (void *) &grid_1d_i[0] );
+          printf("%\n", (void *) &grid_1d_i[1] );
+          break;
+        case 2:
+          printf("%\n", (void *) &grid_2d_i[0][0] );
+          printf("%\n", (void *) &grid_2d_i[1][0] );
+          break;
+        case 3:
+          printf("%\n", (void *) &grid_3d_i[0][0][0] );
+          printf("%\n", (void *) &grid_3d_i[0][1][0] );
+          printf("%\n", (void *) &grid_3d_i[1][0][0] );
+          break;
+        default:
+          printf("Error: Unknown dimension\n");
+          return -1;
+          break;
+      }
+      break;
+    case 'd':
+    case 'D':
+      switch(dim)
+      {
+        case 1:
+          printf("%\n", (void *) &grid_1d_d[0] );
+          printf("%\n", (void *) &grid_1d_d[1] );
+          break;
+        case 2:
+          printf("%\n", (void *) &grid_2d_d[0][0] );
+          printf("%\n", (void *) &grid_2d_d[1][0] );
+          break;
+        case 3:
+          printf("%\n", (void *) &grid_3d_d[0][0][0] );
+          printf("%\n", (void *) &grid_3d_d[0][1][0] );
+          printf("%\n", (void *) &grid_3d_d[1][0][0] );
+          break;
+        default:
+          printf("Error: Unknown dimension\n");
+          return -1;
+          break;
+      }
+      break;
+    default:
+      printf("Error: Unknown data type\n");
+      return -1;
+      break;
+  }
 
   /* Deallocate memory */
   switch(data_type[0])

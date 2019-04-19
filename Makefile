@@ -18,6 +18,7 @@ $(SRC)/grid_generator.o: $(SRC)/grid_generator.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 grid_generator: $(SRC)/grid_generator.o
+	$(CC) -o $@ $(SRC)/grid_generator.o
 
 # all: stencil_memory
 # $(SRC)/stencil.o: $(SRC)/stencil.c
