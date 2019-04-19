@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
     cntr_size = dim_x * dim_y * dim_z;
   }
 #ifdef DEBUG
-        printf("%s%zu\n", "Grid size: ", cntr_size);
+        printf("%s%u\n", "Grid size: ", cntr_size);
 #endif
 
   /*
