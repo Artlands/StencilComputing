@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <inttype.h>
 
 #define SLOTS_PER_GB 134217728
 #define DEBUG
