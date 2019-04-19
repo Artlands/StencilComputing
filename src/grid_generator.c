@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
   uint64_t **grid_2d_b;        // pointer container
   uint64_t ***grid_3d_b;       // pointer container
 
-  while( (ret = getopt( argc, argv, "x:y:z:t:f:h")) != -1 )
+  while( (ret = getopt( argc, argv, "x:y:z:t:c:b:f:h")) != -1 )
   {
     switch( ret )
     {
