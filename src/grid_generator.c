@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
@@ -58,7 +59,7 @@ int main(int argc, char* argv[])
         dim_z = (int)(atoi(optarg));
         break;
       case 't':
-        sprintf(data_t, "%s", optarg);
+        sprintf(data_type, "%s", optarg);
         break;
       case 'f':
         sprintf( filename, "%s", optarg);
@@ -157,7 +158,7 @@ int main(int argc, char* argv[])
           for(i = 0; i < dim_x; i++)
           {
             idx = i * dim_y;
-            grid_2d_i[i] = &int_data[idx]
+            grid_2d_i[i] = &int_data[idx];
           }
           break;
         case 3:
@@ -206,7 +207,7 @@ int main(int argc, char* argv[])
           for(i = 0; i < dim_x; i++)
           {
             idx = i * dim_y;
-            grid_2d_d[i] = &double_data[idx]
+            grid_2d_d[i] = &double_data[idx];
           }
           break;
         case 3:
