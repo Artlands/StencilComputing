@@ -248,17 +248,17 @@ int main(int argc, char* argv[])
       switch(dim)
       {
         case 1:
-          printf("%\n", (void *) &grid_1d_i[0] );
-          printf("%\n", (void *) &grid_1d_i[1] );
+          printf("%p\n", (void *) &grid_1d_i[0] );
+          printf("%p\n", (void *) &grid_1d_i[1] );
           break;
         case 2:
-          printf("%\n", (void *) &grid_2d_i[0][0] );
-          printf("%\n", (void *) &grid_2d_i[1][0] );
+          printf("%p\n", (void *) &grid_2d_i[0][0] );
+          printf("%p\n", (void *) &grid_2d_i[1][0] );
           break;
         case 3:
-          printf("%\n", (void *) &grid_3d_i[0][0][0] );
-          printf("%\n", (void *) &grid_3d_i[0][1][0] );
-          printf("%\n", (void *) &grid_3d_i[1][0][0] );
+          printf("%p\n", (void *) &grid_3d_i[0][0][0] );
+          printf("%p\n", (void *) &grid_3d_i[0][1][0] );
+          printf("%p\n", (void *) &grid_3d_i[1][0][0] );
           break;
         default:
           printf("Error: Unknown dimension\n");
@@ -271,17 +271,17 @@ int main(int argc, char* argv[])
       switch(dim)
       {
         case 1:
-          printf("%\n", (void *) &grid_1d_d[0] );
-          printf("%\n", (void *) &grid_1d_d[1] );
+          printf("%p\n", (void *) &grid_1d_d[0] );
+          printf("%p\n", (void *) &grid_1d_d[1] );
           break;
         case 2:
-          printf("%\n", (void *) &grid_2d_d[0][0] );
-          printf("%\n", (void *) &grid_2d_d[1][0] );
+          printf("%p\n", (void *) &grid_2d_d[0][0] );
+          printf("%p\n", (void *) &grid_2d_d[1][0] );
           break;
         case 3:
-          printf("%\n", (void *) &grid_3d_d[0][0][0] );
-          printf("%\n", (void *) &grid_3d_d[0][1][0] );
-          printf("%\n", (void *) &grid_3d_d[1][0][0] );
+          printf("%p\n", (void *) &grid_3d_d[0][0][0] );
+          printf("%p\n", (void *) &grid_3d_d[0][1][0] );
+          printf("%p\n", (void *) &grid_3d_d[1][0][0] );
           break;
         default:
           printf("Error: Unknown dimension\n");
