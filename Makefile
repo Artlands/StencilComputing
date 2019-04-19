@@ -16,9 +16,11 @@ SRC = ./src
 all: grid_generator
 $(SRC)/grid_generator.o: $(SRC)/grid_generator.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+$(SRC)/shiftamt.o: $(SRC)/shiftamt.c
+	$(CC) -c -o $@ $<
 
-grid_generator: $(SRC)/grid_generator.o
-	$(CC) -o $@ $(SRC)/grid_generator.o
+grid_generator: $(SRC)/grid_generator.o $(SRC)/shiftamt.o
+	$(CC) -o $@ $(SRC)/grid_generator.o $(SRC)/shiftamt.o
 
 # all: stencil_memory
 # $(SRC)/stencil.o: $(SRC)/stencil.c
