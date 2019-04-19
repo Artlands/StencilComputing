@@ -305,11 +305,9 @@ int main(int argc, char* argv[])
         case 1:
           break;
         case 2:
-          free(grid_2d_i[0]);
           free(grid_2d_i);
           break;
         case 3:
-          free(grid_3d_i[0][0]);
           for(i = 0; i < dim_x; i++)
           {
             free(grid_3d_i[i]);
@@ -330,11 +328,9 @@ int main(int argc, char* argv[])
         case 1:
           break;
         case 2:
-          free(grid_2d_d[0]);
           free(grid_2d_d);
           break;
         case 3:
-          free(grid_3d_d[0][0]);
           for(i = 0; i < dim_x; i++)
           {
             free(grid_3d_d[i]);
