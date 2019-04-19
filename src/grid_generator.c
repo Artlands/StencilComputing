@@ -39,8 +39,6 @@ int main(int argc, char* argv[])
   uint32_t dim_z = 0;
   uint32_t dim = 0;            // dimension of the grid
   uint32_t cntr_size = 0;      // container size
-  uint64_t base_a = 0x00ll;
-  uint64_t base_b = 0x00ll;
   uint64_t offset = 0x00ll;    // offset between base_a and base_b
   uint64_t stor_size = 0x00ll; // storage size: intger-4, double-8
   uint32_t shiftamt = 0;
