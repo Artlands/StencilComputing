@@ -147,6 +147,9 @@ int main(int argc, char* argv[])
     dim = 3;
     cntr_size = dim_x * dim_y * dim_z;
   }
+#ifdef DEBUG
+        printf("%s%" PRIX32 "\n", "Grid size: ", cntr_size);
+#endif
 
   /*
    * Make sure we have enough HMC capacity
