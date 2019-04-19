@@ -11,6 +11,13 @@
 #include <unistd.h>
 #include <string.h>
 
+#define SLOTS_PER_GB 134217728
+#define DEBUG
+
+/* ---------------------------------------------- FUNCTION PROTOTYPES*/
+extern int getshiftamount( uint32_t bsize,
+                           uint32_t *shiftamt );
+
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
 {
@@ -19,47 +26,66 @@ int main(int argc, char* argv[])
   int i = 0;
   int j = 0;
   int k = 0;
-  int idx;
+  int idx = 0;
 
-  /* STENCIL GRID FEATURES */
-  int dim_x = 0;
-  int dim_y = 0;
-  int dim_z = 0;
-  int dim = 0;            // dimension of the grid
-  int container_size = 0;
-  int point_size = 0;     // integer - 4B, double - 8B
-  char data_type[10];     // stencil data type
+  /* STENCIL GRID FEATURES
+   *
+   * b[i] = a[i]
+   * Jocobi iteration stencil, read grid <--> write grid
+   */
+  uint32_t dim_x = 0;
+  uint32_t dim_y = 0;
+  uint32_t dim_z = 0;
+  uint32_t dim = 0;            // dimension of the grid
+  uint32_t cntr_size = 0;      // container size
+  uint64_t base_a = 0x00ll;
+  uint64_t base_b = 0x00ll;
+  uint64_t offset = 0x00ll;    // offset between base_a and base_b
+  uint64_t stor_size = 0x00ll; // storage size: intger-4, double-8
+  uint32_t shiftamt = 0;
+  char data_type[10];          // stencil data type
 
+  /* HMC */
+  uint32_t capacity = 4;    // HMC capacity
+  uint32_t bsize = 0;       // HMC blocksize, the less significant bsize bits are ignored
 
-  /* MEMORY TRACE FILE*/
+  /* MEMORY TRACE */
+  uint64_t base_a = 0x00ll;
+  uint64_t base_b = 0x00ll;
   FILE *outfile = NULL;
   char filename[1024];
 
   /* MALLOC MEMORY*/
-  int *int_data;        // data container
-  int *grid_1d_i;       // pointer container
-  int **grid_2d_i;      // pointer container
-  int ***grid_3d_i;     // pointer container
-  double *double_data;  // data container
-  double *grid_1d_d;    // pointer container
-  double **grid_2d_d;   // pointer container
-  double ***grid_3d_d;  // pointer container
+  uint64_t *data_cntr_a;       // data container
+  uint64_t *grid_1d_a;         // pointer container
+  uint64_t **grid_2d_a;        // pointer container
+  uint64_t ***grid_3d_a;       // pointer container
+  uint64_t *data_cntr_b;       // data container
+  uint64_t *grid_1d_b;         // pointer container
+  uint64_t **grid_2d_b;        // pointer container
+  uint64_t ***grid_3d_b;       // pointer container
 
   while( (ret = getopt( argc, argv, "x:y:z:t:f:h")) != -1 )
   {
     switch( ret )
     {
       case 'x':
-        dim_x = (int)(atoi(optarg));
+        dim_x = (uint32_t)(atoi(optarg));
         break;
       case 'y':
-        dim_y = (int)(atoi(optarg));
+        dim_y = (uint32_t)(atoi(optarg));
         break;
       case 'z':
-        dim_z = (int)(atoi(optarg));
+        dim_z = (uint32_t)(atoi(optarg));
         break;
       case 't':
         sprintf(data_type, "%s", optarg);
+        break;
+      case 'c':
+        capacity = (uint32_t)(atoi(optarg));
+        break;
+      case 'b':
+        bsize = (uint32_t)(atoi(optarg));
         break;
       case 'f':
         sprintf( filename, "%s", optarg);
@@ -70,6 +96,8 @@ int main(int argc, char* argv[])
         printf(" -y <stencil grid size on dim y>\n");
         printf(" -z <stencil grid size on dim z>\n");
         printf(" -t <stencil grid data type: Integer, Double>\n");
+        printf(" -c <HMC capacity: 4, 8>");
+        printf(" -b <HMC blocksize: 32, 64, 128, 256>");
         printf(" -f <output trace file name>\n");
         printf(" h ...print help\n");
         return 0;
@@ -93,24 +121,13 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  /* data_type = Integer */
-  if( (strncmp(data_type, "i", 1) == 0) || (strncmp(data_type, "I", 1) == 0) )
-  {
-    point_size = 4;
-  }
-  /* data_type = Double floating */
-  else if ( (strncmp(data_type, "d", 1) == 0) || (strncmp(data_type, "D", 1) == 0) )
-  {
-    point_size = 8;
-  }
-  else
-  {
-    printf("ERROR: Invalid data type\n");
+  if (capacity != 4 && capacity != 8) {
+    printf("ERROR: Capacity is invalid\n");
     return -1;
   }
 
-  if( strlen(filename) == 0) {
-    printf("ERROR: File name is invalid\n");
+  if (bsize != 32 && bsize != 64 && bsize != 128 && bsize != 256) {
+    printf("ERROR: Block size is invalid\n");
     return -1;
   }
   /* ---- End Sanity Check ---- */
@@ -119,236 +136,210 @@ int main(int argc, char* argv[])
   if( dim_y == 0 )
   {
     dim = 1;
-    container_size = dim_x;
+    cntr_size = dim_x;
   }
   else if( dim_z == 0 )
   {
     dim = 2;
-    container_size = dim_x * dim_y;
+    cntr_size = dim_x * dim_y;
   }
   else
   {
     dim = 3;
-    container_size = dim_x * dim_y * dim_z;
+    cntr_size = dim_x * dim_y * dim_z;
   }
 
-  /* Allocate contiguous memory for stencil grid*/
+  /*
+   * Make sure we have enough HMC capacity
+   *
+   */
   switch(data_type[0])
   {
     case 'i':
     case 'I':
-      int_data = (int *) malloc( sizeof(int) * container_size );
-      if( int_data == NULL)
+      stor_size = 0x04ll;
+      if( (long)((long)capacity * (long)SLOTS_PER_GB) <
+          (long)(cntr_size * 2 * 4) )
       {
-        printf("Error: Out of memory\n");
+        printf("ERROR: NOT ENOUGH AVAILABLE PHYSICAL STORAGE\n");
         return -1;
-      }
-      switch(dim)
-      {
-        case 1:
-          grid_1d_i = int_data;
-          break;
-        case 2:
-          grid_2d_i = (int **) malloc( sizeof(int *) * dim_x );
-          if( grid_2d_i == NULL)
-          {
-            printf("Error: Out of memory\n");
-            return -1;
-          }
-          for(i = 0; i < dim_x; i++)
-          {
-            idx = i * dim_y;
-            grid_2d_i[i] = &int_data[idx];
-          }
-          break;
-        case 3:
-          grid_3d_i = (int ***) malloc( sizeof(int **) * dim_x );
-          if( grid_3d_i == NULL )
-          {
-            printf("Error: Out of memory\n");
-            return -1;
-          }
-          for(i = 0; i < dim_x; i++)
-          {
-            grid_3d_i[i] = (int **) malloc( sizeof(int *) * dim_y);
-            for(j = 0; j < dim_y; j++)
-            {
-              idx = j * dim_x + i * dim_x * dim_y;
-              grid_3d_i[i][j] = &int_data[idx];
-            }
-          }
-          break;
-        default:
-          printf("Error: Unknown dimension\n");
-          return -1;
-          break;
       }
       break;
     case 'd':
     case 'D':
-      double_data = (double *) malloc( sizeof(double) * container_size);
-      if( double_data == NULL)
+      stor_size = 0x08ll;
+      if( (long)((long)capacity * (long)SLOTS_PER_GB) <
+          (long)(cntr_size * 2 * 8) )
+      {
+        printf("ERROR: NOT ENOUGH AVAILABLE PHYSICAL STORAGE\n");
+        return -1;
+      }
+      break;
+    default:
+      printf("Error: Unknow data type\n");
+      return -1;
+      break;
+  }
+
+  /*
+   * Get the shift amount based upon the block size
+   *
+   */
+  if( getshiftamount( bsize, &shiftamt) != 0 ) {
+    printf("ERROR: Failed to retrive shift amount\n");
+    return -1;
+  }
+
+  /*
+   * Caculate the base of each vector
+   *
+   */
+  offset = (uint64_t)(cntr_size * (stor_size + 1));
+
+  base_a = (0xAFll) << (uint64_t)(shiftamt);
+  base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
+
+  /* Allocate contiguous memory space for storing stencil grid addresses*/
+  data_cntr_a = (uint64_t *) malloc( sizeof( uint64_t ) * cntr_size);
+  data_cntr_b = (uint64_t *) malloc( sizeof( uint64_t ) * cntr_size);
+  if( data_cntr_a == NULL || data_cntr_b == NULL)
+  {
+    printf("Error: Out of memory\n");
+    return -1;
+  }
+
+  switch(dim)
+  {
+    case 1:
+      grid_1d_a = data_cntr_a;
+      grid_1d_b = data_cntr_b;
+      break;
+    case 2:
+      grid_2d_a = (uint64_t **) malloc( sizeof(uint64_t *) * dim_x );
+      grid_2d_b = (uint64_t **) malloc( sizeof(uint64_t *) * dim_x );
+      if( grid_2d_a == NULL || grid_2d_b == NULL )
       {
         printf("Error: Out of memory\n");
         return -1;
       }
-      switch(dim)
+      for(i = 0; i < dim_x; i++)
       {
-        case 1:
-          grid_1d_d = double_data;
-          break;
-        case 2:
-          grid_2d_d = (double **) malloc( sizeof(double *) * dim_x );
-          if( grid_2d_d == NULL)
-          {
-            printf("Error: Out of memory\n");
-            return -1;
-          }
-          for(i = 0; i < dim_x; i++)
-          {
-            idx = i * dim_y;
-            grid_2d_d[i] = &double_data[idx];
-          }
-          break;
-        case 3:
-          grid_3d_d = (double ***) malloc( sizeof(double **) * dim_x );
-          if( grid_3d_d == NULL )
-          {
-            printf("Error: Out of memory\n");
-            return -1;
-          }
-          for(i = 0; i < dim_x; i++)
-          {
-            grid_3d_d[i] = (double **) malloc( sizeof(double *) * dim_y);
-            for(j = 0; j < dim_y; j++)
-            {
-              idx = j * dim_x + i * dim_x * dim_y;
-              grid_3d_d[i][j] = &double_data[idx];
-            }
-          }
-          break;
-        default:
-          printf("Error: Unknown dimension\n");
-          return -1;
-          break;
+        idx = i * dim_y;
+        grid_2d_a[i] = &data_cntr_a[idx];
+        grid_2d_b[i] = &data_cntr_b[idx];
+      }
+      break;
+    case 3:
+      grid_3d_a = (uint64_t ***) malloc( sizeof(uint64_t **) * dim_x );
+      grid_3d_b = (uint64_t ***) malloc( sizeof(uint64_t **) * dim_x );
+      if( grid_3d_a == NULL ||  grid_3d_b == NULL )
+      {
+        printf("Error: Out of memory\n");
+        return -1;
+      }
+      for(i = 0; i < dim_x; i++)
+      {
+        grid_3d_a[i] = (uint64_t **) malloc( sizeof(uint64_t *) * dim_y);
+        grid_3d_b[i] = (uint64_t **) malloc( sizeof(uint64_t *) * dim_y);
+        for(j = 0; j < dim_y; j++)
+        {
+          idx = j * dim_x + i * dim_x * dim_y;
+          grid_3d_a[i][j] = &data_cntr_a[idx];
+          grid_3d_b[i][j] = &data_cntr_b[idx];
+        }
       }
       break;
     default:
-      printf("Error: Unknown data type\n");
       return -1;
       break;
   }
   /* End Allocation */
 
-  /* Try to print out memory address*/
-  switch (data_type[0])
+  /* Generate memory addresses, store them in data container */
+  switch(dim)
   {
-    case 'i':
-    case 'I':
-      switch(dim)
+    case 1:
+      for ( i = 0; i < dim_x; i++ )
       {
-        case 1:
-          printf("%p\n", (void *) &grid_1d_i[0] );
-          printf("%p\n", (void *) &grid_1d_i[1] );
-          break;
-        case 2:
-          printf("%p\n", (void *) &grid_2d_i[0][0] );
-          printf("%p\n", (void *) &grid_2d_i[1][0] );
-          break;
-        case 3:
-          printf("%p\n", (void *) &grid_3d_i[0][0][0] );
-          printf("%p\n", (void *) &grid_3d_i[0][1][0] );
-          printf("%p\n", (void *) &grid_3d_i[1][0][0] );
-          break;
-        default:
-          printf("Error: Unknown dimension\n");
-          return -1;
-          break;
+        grid_1d_a[i] = (uint64_t)( base_a + (((uint64_t)(i) * stor_size)
+                                   << (uint64_t)(shiftamt)) );
+        grid_1d_b[i] = (uint64_t)( base_b + (((uint64_t)(i) * stor_size)
+                                   << (uint64_t)(shiftamt)) );
+#ifdef DEBUG
+        printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
+        printf("%s%016" PRIX64 "\n", "B grid address: ", grid_1d_b[i]);
+#endif
       }
       break;
-    case 'd':
-    case 'D':
-      switch(dim)
+    case 2:
+      for( i = 0; i < dim_x; i++)
       {
-        case 1:
-          printf("%p\n", (void *) &grid_1d_d[0] );
-          printf("%p\n", (void *) &grid_1d_d[1] );
-          break;
-        case 2:
-          printf("%p\n", (void *) &grid_2d_d[0][0] );
-          printf("%p\n", (void *) &grid_2d_d[1][0] );
-          break;
-        case 3:
-          printf("%p\n", (void *) &grid_3d_d[0][0][0] );
-          printf("%p\n", (void *) &grid_3d_d[0][1][0] );
-          printf("%p\n", (void *) &grid_3d_d[1][0][0] );
-          break;
-        default:
-          printf("Error: Unknown dimension\n");
-          return -1;
-          break;
+        for( j = 0; j < dim_y; j++)
+        {
+          grid_2d_a[i][j] = (uint64_t)( base_a + (((uint64_t)(j + i * dim_y)
+                                        * stor_size) << (uint64_t)(shiftamt)) );
+          grid_2d_b[i][j] = (uint64_t)( base_b + (((uint64_t)(j + i * dim_y)
+                                        * stor_size) << (uint64_t)(shiftamt)) );
+#ifdef DEBUG
+          printf("%s%016" PRIX64 "\n", "A grid address: ", grid_2d_a[i][j]);
+          printf("%s%016" PRIX64 "\n", "B grid address: ", grid_2d_b[i][j]);
+#endif
+        }
+      }
+      break;
+    case 3:
+      for( i = 0; i < dim_x; i++)
+      {
+        for( j = 0; j < dim_y; j++)
+        {
+          for( k = 0; k < dim_z; k++)
+          {
+            grid_3d_a[i][j][k] = (uint64_t)( base_a + (((uint64_t)(k + (j + i
+                                             * dim_y) * dim_z) * stor_size)
+                                             << (uint64_t)(shiftamt)) );
+            grid_3d_b[i][j][k] = (uint64_t)( base_b + (((uint64_t)(k + (j + i
+                                             * dim_y) * dim_z) * stor_size)
+                                             << (uint64_t)(shiftamt)) );
+#ifdef DEBUG
+           printf("%s%016" PRIX64 "\n", "A grid address: ", grid_3d_a[i][j][k]);
+           printf("%s%016" PRIX64 "\n", "B grid address: ", grid_3d_b[i][j][k]);
+#endif
+          }
+        }
       }
       break;
     default:
-      printf("Error: Unknown data type\n");
       return -1;
       break;
   }
+  /* End Allocation */
 
+cleanup:
   /* Deallocate memory */
-  switch(data_type[0])
+  switch(dim)
   {
-    case 'i':
-    case 'I':
-      switch(dim)
-      {
-        case 1:
-          break;
-        case 2:
-          free(grid_2d_i);
-          break;
-        case 3:
-          for(i = 0; i < dim_x; i++)
-          {
-            free(grid_3d_i[i]);
-          }
-          free(grid_3d_i);
-          break;
-        default:
-          printf("Error: Unknown dimension\n");
-          return -1;
-          break;
-      }
-      free(int_data);
+    case 1:
       break;
-    case 'd':
-    case 'D':
-      switch(dim)
+    case 2:
+      free(grid_2d_a);
+      free(grid_2d_b);
+      break;
+    case 3:
+      for(i = 0; i < dim_x; i++)
       {
-        case 1:
-          break;
-        case 2:
-          free(grid_2d_d);
-          break;
-        case 3:
-          for(i = 0; i < dim_x; i++)
-          {
-            free(grid_3d_d[i]);
-          }
-          free(grid_3d_d);
-          break;
-        default:
-          printf("Error: Unknown dimension\n");
-          return -1;
-          break;
+        free(grid_3d_a[i]);
+        free(grid_3d_b[i]);
       }
-      free(double_data);
+      free(grid_3d_a);
+      free(grid_3d_b);
       break;
     default:
-      printf("Error: Unknown data type\n");
+      printf("Error: Unknown dimension\n");
       return -1;
       break;
   }
+  free(data_cntr_a);
+  free(data_cntr_b);
   /* End Deallocation */
 
   return 0;
