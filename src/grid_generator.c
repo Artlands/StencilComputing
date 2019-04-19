@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
   {
     point_size = 4;
   }
-    /* data_type = Double floating */
+  /* data_type = Double floating */
   else if ( (strncmp(data_type, "d", 1) == 0) || (strncmp(data_type, "D", 1) == 0) )
   {
     point_size = 8;
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
   }
   /* ---- End Sanity Check ---- */
 
-  /* Get Container Size */
+  /* Get Dimension and Container Size */
   if( dim_y == 0 )
   {
     dim = 1;
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
   {
     case 'i':
     case 'I':
-      int_data = malloc( sizeof(int) * container_size );
+      int_data = (int *) malloc( sizeof(int) * container_size );
       if( int_data == NULL)
       {
         printf("Error: Out of memory\n");
@@ -148,18 +148,20 @@ int main(int argc, char* argv[])
           grid_1d_i = int_data;
           break;
         case 2:
-          grid_2d_i = malloc( sizeof(int *) * dim_x );
+          grid_2d_i = (int **) malloc( sizeof(int *) * dim_x );
           if( grid_2d_i == NULL)
           {
             printf("Error: Out of memory\n");
             return -1;
           }
-          for(i = 0; i < dim_x; i++){
+          for(i = 0; i < dim_x; i++)
+          {
             idx = i * dim_y;
             grid_2d_i[i] = &int_data[idx]
           }
+          break;
         case 3:
-          grid_3d_i = malloc( sizeof(int **) * dim_x );
+          grid_3d_i = (int ***) malloc( sizeof(int **) * dim_x );
           if( grid_3d_i == NULL )
           {
             printf("Error: Out of memory\n");
@@ -176,36 +178,126 @@ int main(int argc, char* argv[])
           }
           break;
         default:
-          printf("Error\n");
+          printf("Error: Unknown dimension\n");
           return -1;
           break;
       }
       break;
     case 'd':
     case 'D':
-      double_data = malloc( sizeof(double) * container_size);
+      double_data = (double *) malloc( sizeof(double) * container_size);
+      if( double_data == NULL)
+      {
+        printf("Error: Out of memory\n");
+        return -1;
+      }
+      switch(dim)
+      {
+        case 1:
+          grid_1d_d = double_data;
+          break;
+        case 2:
+          grid_2d_d = (double **) malloc( sizeof(double *) * dim_x );
+          if( grid_2d_d == NULL)
+          {
+            printf("Error: Out of memory\n");
+            return -1;
+          }
+          for(i = 0; i < dim_x; i++)
+          {
+            idx = i * dim_y;
+            grid_2d_d[i] = &double_data[idx]
+          }
+          break;
+        case 3:
+          grid_3d_d = (double ***) malloc( sizeof(double **) * dim_x );
+          if( grid_3d_d == NULL )
+          {
+            printf("Error: Out of memory\n");
+            return -1;
+          }
+          for(i = 0; i < dim_x; i++)
+          {
+            grid_3d_d[i] = (double **) malloc( sizeof(double *) * dim_y);
+            for(j = 0; j < dim_y; j++)
+            {
+              idx = j * dim_x + i * dim_x * dim_y;
+              grid_3d_d[i][j] = &double_data[idx];
+            }
+          }
+          break;
+        default:
+          printf("Error: Unknown dimension\n");
+          return -1;
+          break;
+      }
       break;
     default:
       printf("Error: Unknown data type\n");
       return -1;
       break;
   }
+  /* End Allocation */
 
   /* Deallocate memory */
   switch(data_type[0])
   {
     case 'i':
     case 'I':
+      switch(dim)
+      {
+        case 1:
+          break;
+        case 2:
+          free(grid_2d_i[0]);
+          free(grid_2d_i);
+          break;
+        case 3:
+          free(grid_3d_i[0][0]);
+          for(i = 0; i < dim_x; i++)
+          {
+            free(grid_3d_i[i]);
+          }
+          free(grid_3d_i);
+          break;
+        default:
+          printf("Error: Unknown dimension\n");
+          return -1;
+          break;
+      }
       free(int_data);
       break;
     case 'd':
     case 'D':
+      switch(dim)
+      {
+        case 1:
+          break;
+        case 2:
+          free(grid_2d_d[0]);
+          free(grid_2d_d);
+          break;
+        case 3:
+          free(grid_3d_d[0][0]);
+          for(i = 0; i < dim_x; i++)
+          {
+            free(grid_3d_d[i]);
+          }
+          free(grid_3d_d);
+          break;
+        default:
+          printf("Error: Unknown dimension\n");
+          return -1;
+          break;
+      }
+      free(double_data);
       break;
     default:
       printf("Error: Unknown data type\n");
       return -1;
       break;
   }
+  /* End Deallocation */
 
   return 0;
 }
