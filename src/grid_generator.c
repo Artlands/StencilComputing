@@ -41,17 +41,17 @@ int main(int argc, char* argv[])
   uint32_t cntr_size = 0;      // container size
   uint64_t offset = 0x00ll;    // offset between base_a and base_b
   uint64_t stor_size = 0x00ll; // storage size: intger-4, double-8
-  uint32_t shiftamt = 0;
   char data_type[10];          // stencil data type
 
   /* HMC */
   uint32_t capacity = 4;    // HMC capacity
   uint32_t bsize = 0;       // HMC blocksize, the less significant bsize bits are ignored
+  uint32_t shiftamt = 0;    // based on the blocksize, the consectutive addresses will be distribued across vaults
 
   /* MEMORY TRACE */
   uint64_t base_a = 0x00ll;
   uint64_t base_b = 0x00ll;
-  FILE *outfile = NULL;
+  FILE *outfile = NULL;     // save trace file
   char filename[1024];
 
   /* MALLOC MEMORY*/
@@ -198,6 +198,7 @@ int main(int argc, char* argv[])
    */
   offset = (uint64_t)(cntr_size * (stor_size + 1));
 
+  /* Manually select 0xAFll as the start address, it can be any arbitrary address */
   base_a = (0xAFll) << (uint64_t)(shiftamt);
   base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
 
@@ -222,6 +223,8 @@ int main(int argc, char* argv[])
       if( grid_2d_a == NULL || grid_2d_b == NULL )
       {
         printf("Error: Out of memory\n");
+        free(data_cntr_a);
+        free(data_cntr_b);
         return -1;
       }
       for(i = 0; i < dim_x; i++)
@@ -237,6 +240,8 @@ int main(int argc, char* argv[])
       if( grid_3d_a == NULL ||  grid_3d_b == NULL )
       {
         printf("Error: Out of memory\n");
+        free(data_cntr_a);
+        free(data_cntr_b);
         return -1;
       }
       for(i = 0; i < dim_x; i++)

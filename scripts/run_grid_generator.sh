@@ -1,10 +1,11 @@
 #!/bin/bash
 
 GENERATOR=../grid_generator
-DIM_X=3
-DIM_Y=3
-DIM_Z=3
+DIM_X=2
+DIM_Y=2
+DIM_Z=0
 GRID_TYPE=double
+# GRID_TYPE=Integer
 CAPACITY=8
 BSIZE=256
 FILENAME=trace.out
