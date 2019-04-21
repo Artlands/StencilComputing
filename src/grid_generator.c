@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
+#include <fcntl.h>
 
 #define SLOTS_PER_GB 134217728
 #define DEBUG
@@ -18,6 +19,11 @@
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int getshiftamount( uint32_t bsize,
                            uint32_t *shiftamt );
+
+void write_to_file(FILE* fp, char* op, uint64_t addr)
+{
+  fprintf(fp, "%s : 1 : 0x%016" PRIX64 "\n", op, addr);
+}
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
@@ -42,6 +48,9 @@ int main(int argc, char* argv[])
   uint64_t offset = 0x00ll;    // offset between base_a and base_b
   uint64_t stor_size = 0x00ll; // storage size: intger-4, double-8
   char data_type[10];          // stencil data type
+  int sten_type = 0;           // stencil type: 0, 1, 2
+  int sten_order = 1;          // stencil order
+  int sten_ptnum = 1;          // stencil computing elements
 
   /* HMC */
   uint32_t capacity = 4;    // HMC capacity
@@ -80,6 +89,12 @@ int main(int argc, char* argv[])
       case 't':
         sprintf(data_type, "%s", optarg);
         break;
+      case 'T':
+        sten_type = (int)(atoi(optarg));
+        break;
+      case 'O':
+        sten_order = (int)(atoi(optarg));
+        break;
       case 'c':
         capacity = (uint32_t)(atoi(optarg));
         break;
@@ -109,27 +124,36 @@ int main(int argc, char* argv[])
   }
 
   /* ---- Sanity Check ---- */
-  if (dim_x == 0) {
+  if ( dim_x == 0 ) {
     printf("ERROR: Grid size is invalid\n");
     return -1;
-  } else if(dim_y == 0 && dim_z != 0) {
+  } else if( dim_y == 0 && dim_z != 0 ) {
     printf("ERROR: Grid size is invalid\n");
     return -1;
-  } else if( dim_x < 0 || dim_y < 0 || dim_z < 0) {
+  } else if( dim_x < 0 || dim_y < 0 || dim_z < 0 ) {
     printf("ERROR: Grid size is invalid\n");
     return -1;
   }
 
-  if (capacity != 4 && capacity != 8) {
+  if ( sten_type != 0 && sten_type != 1 && sten_type != 2 ) {
+    printf("ERROR: Stencil type is invalid\n");
+    return -1;
+  }
+
+  if ( sten_order < 1 ) {
+    printf("ERROR: Stencil order is invalid\n");
+    return -1;
+  }
+
+  if ( capacity != 4 && capacity != 8 ) {
     printf("ERROR: Capacity is invalid\n");
     return -1;
   }
 
-  if (bsize != 32 && bsize != 64 && bsize != 128 && bsize != 256) {
+  if ( bsize != 32 && bsize != 64 && bsize != 128 && bsize != 256 ) {
     printf("ERROR: Block size is invalid\n");
     return -1;
   }
-  /* ---- End Sanity Check ---- */
 
   /* Get Dimension and Container Size */
   if( dim_y == 0 )
@@ -150,6 +174,37 @@ int main(int argc, char* argv[])
 #ifdef DEBUG
         printf("%s%u\n", "Grid size: ", cntr_size);
 #endif
+
+  switch(dim)
+  {
+    case 1:
+      if( sten_order > (dim_x - 1)/2 )
+      {
+        printf("ERROR: Stencil order is invalid\n");
+      }
+      return -1;
+      break;
+    case 2:
+      if( sten_order > (dim_x - 1)/2 || sten_order > (dim_y - 1)/2 )
+      {
+        printf("ERROR: Stencil order is invalid\n");
+      }
+      return -1;
+      break;
+    case 3:
+      if( sten_order > (dim_x - 1)/2 || sten_order > (dim_y - 1)/2
+          sten_order > (dim_z - 1)/2 )
+      {
+        printf("ERROR: Stencil order is invalid\n");
+      }
+      return -1;
+      break;
+    default:
+      printf("Error: Unknown dimension\n");
+      return -1;
+      break;
+  }
+  /* ---- End Sanity Check ---- */
 
   /*
    * Make sure we have enough HMC capacity
@@ -320,6 +375,50 @@ int main(int argc, char* argv[])
       break;
   }
   /* End Allocation */
+
+  /*
+   * Generate memory traces based on the stencil type and order
+   *
+   */
+
+  /* 3D -27 points */
+  if( sten_type == 2)
+  {
+    sprintf(filename, "../traces/3D-27points.out");
+    outfile = fopen(filename, "w");
+    if( outfile == NULL ) {
+      printf("ERROR: Cannot open trace file\n");
+      goto cleanup;
+    }
+
+  }
+
+  /* 2D -9 points */
+  if( sten_type == 1)
+  {
+    sprintf(filename, "../traces/2D-9points.out");
+    outfile = fopen(filename, "w");
+    if( outfile == NULL ) {
+      printf("ERROR: Cannot open trace file\n");
+      goto cleanup;
+    }
+
+  }
+
+  /* Order varies */
+  if( sten_type == 0)
+  {
+    sten_ptnum = 2 * sten_order * dim + 1;
+    sprintf(filename, "../traces/%dD-%dpoints-%d.out", dim, sten_ptnum, sten_order);
+    outfile = fopen(filename, "w");
+    if( outfile == NULL ) {
+      printf("ERROR: Cannot open trace file\n");
+      goto cleanup;
+    }
+
+  }
+
+  fclose(outfile);
 
 cleanup:
   /* Deallocate memory */
