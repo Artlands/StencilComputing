@@ -7,7 +7,7 @@
 ###### Read stencil grid address traces and build memory traces based on the stencil type
 * Iteration_type: Jacobi Iteration, involve 2 same size grid
 * Order: [int] (Computing elements in each dimension: 2 * Order + 1)
-* Boundary Condition: Periodic
+* Boundary Condition: ghost cells storing boundary conditions
   * i.e. the element before the first one is the last element in this dimension. the element after the last on is the first element in this dimension.
 * Access_types:
   * (__TYPE_0__): Order varies, the elements involved in one point computation is calculated based on the order size.

@@ -33,6 +33,7 @@ int main(int argc, char* argv[])
   int i = 0;
   int j = 0;
   int k = 0;
+  int r = 0;
   int idx = 0;
 
   /* STENCIL GRID FEATURES
@@ -62,6 +63,7 @@ int main(int argc, char* argv[])
   uint64_t base_b = 0x00ll;
   FILE *outfile = NULL;     // save trace file
   char filename[1024];
+  char operation[10];
 
   /* MALLOC MEMORY*/
   uint64_t *data_cntr_a;       // data container
@@ -110,6 +112,8 @@ int main(int argc, char* argv[])
         printf(" -y <stencil grid size on dim y>\n");
         printf(" -z <stencil grid size on dim z>\n");
         printf(" -t <stencil grid data type: Integer, Double>\n");
+        printf(" -T <stencil type: 0(Order varies), 1(2D-9points), 2(3D-27points)>\n", );
+        printf(" -O <stencil order>\n", );
         printf(" -c <HMC capacity: 4, 8>");
         printf(" -b <HMC blocksize: 32, 64, 128, 256>");
         printf(" -f <output trace file name>\n");
@@ -381,7 +385,7 @@ int main(int argc, char* argv[])
    *
    */
 
-  /* 3D -27 points */
+  /* 3D-27 points */
   if( sten_type == 2)
   {
     sprintf(filename, "../traces/3D-27points.out");
@@ -390,10 +394,56 @@ int main(int argc, char* argv[])
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
     }
+    for( i = 1; i < (dim_x-1); i++ )
+    {
+      for( j = 1; j < (dim_y-1); j++ )
+      {
+        for( k = 1; k < (dim_z-1); k++ )
+        {
+          memset(operation, 0, sizeof(operation));
+          // Read operation
+          sprintf(operation, "RD");
+          write_to_file(outfile, operation, grid_3d_a[i][j][k]);
 
+          write_to_file(outfile, operation, grid_3d_a[i-1][j][k]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j][k]);
+          write_to_file(outfile, operation, grid_3d_a[i][j-1][k]);
+          write_to_file(outfile, operation, grid_3d_a[i][j+1][k]);
+          write_to_file(outfile, operation, grid_3d_a[i][j][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i][j][k+1]);
+
+          write_to_file(outfile, operation, grid_3d_a[i-1][j][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i][j-1][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i][j+1][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i-1][j-1][k]);
+          write_to_file(outfile, operation, grid_3d_a[i-1][j+1][k]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j-1][k]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j+1][k]);
+          write_to_file(outfile, operation, grid_3d_a[i-1][j][k+1]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j][k+1]);
+          write_to_file(outfile, operation, grid_3d_a[i][j-1][k+1]);
+          write_to_file(outfile, operation, grid_3d_a[i][j+1][k+1]);
+
+          write_to_file(outfile, operation, grid_3d_a[i-1][j-1][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i-1][j+1][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j-1][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j+1][k-1]);
+          write_to_file(outfile, operation, grid_3d_a[i-1][j-1][k+1]);
+          write_to_file(outfile, operation, grid_3d_a[i-1][j+1][k+1]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j-1][k+1]);
+          write_to_file(outfile, operation, grid_3d_a[i+1][j+1][k+1]);
+
+          memset(operation, 0, sizeof(operation));
+          // Write operation
+          sprintf(operation, "WR");
+          write_to_file(outfile, operation, grid_3d_b[i][j][k]);
+        }
+      }
+    }
   }
 
-  /* 2D -9 points */
+  /* 2D-9 points */
   if( sten_type == 1)
   {
     sprintf(filename, "../traces/2D-9points.out");
@@ -401,6 +451,29 @@ int main(int argc, char* argv[])
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
+    }
+    for( i = 1; i < (dim_x-1); i++ )
+    {
+      for( j = 1; j< (dim_y-1); j++ )
+      {
+        memset(operation, 0, sizeof(operation));
+        // Read operation
+        sprintf(operation, "RD");
+        write_to_file(outfile, operation, grid_2d_a[i-1][j]);
+        write_to_file(outfile, operation, grid_2d_a[i][j]);
+        write_to_file(outfile, operation, grid_2d_a[i+1][j]);
+        write_to_file(outfile, operation, grid_2d_a[i][j-1]);
+        write_to_file(outfile, operation, grid_2d_a[i][j+1]);
+        write_to_file(outfile, operation, grid_2d_a[i-1][j-1]);
+        write_to_file(outfile, operation, grid_2d_a[i+1][j-1]);
+        write_to_file(outfile, operation, grid_2d_a[i-1][j+1]);
+        write_to_file(outfile, operation, grid_2d_a[i+1][j+1]);
+
+        memset(operation, 0, sizeof(operation));
+        // Write operation
+        sprintf(operation, "WR");
+        write_to_file(outfile, operation, grid_2d_b[i][j]);
+      }
     }
 
   }
@@ -414,6 +487,91 @@ int main(int argc, char* argv[])
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
+    }
+    switch(dim)
+    {
+      case 1:
+        for( i = sten_order; i < (dim_x-sten_order); i++ )
+        {
+          memset(operation, 0, sizeof(operation));
+          // Read operation
+          sprintf(operation, "RD");
+
+          // Central point
+          write_to_file(outfile, operation, grid_1d_a[i]);
+          // Orders points
+          for( r = 1; r <= sten_order; r++)
+          {
+            write_to_file(outfile, operation, grid_1d_a[i-r]);
+            write_to_file(outfile, operation, grid_1d_a[i+r]);
+          }
+
+          memset(operation, 0, sizeof(operation));
+          // Write operation
+          sprintf(operation, "WR");
+          write_to_file(outfile, operation, grid_1d_b[i]);
+        }
+      case 2:
+        for( i = sten_order; i < (dim_x-sten_order); i++ )
+        {
+          for( j = sten_order; j < (dim_y-sten_order); j++ )
+          {
+            memset(operation, 0, sizeof(operation));
+            // Read operation
+            sprintf(operation, "RD");
+
+            // Central point
+            write_to_file(outfile, operation, grid_2d_a[i][j]);
+            // Orders points
+            for( r = 1; r <= sten_order; r++ )
+            {
+              write_to_file(outfile, operation, grid_2d_a[i-r][j]);
+              write_to_file(outfile, operation, grid_2d_a[i+r][j]);
+              write_to_file(outfile, operation, grid_2d_a[i][j-r]);
+              write_to_file(outfile, operation, grid_2d_a[i][j+r]);
+            }
+
+            memset(operation, 0, sizeof(operation));
+            // Write operation
+            sprintf(operation, "WR");
+            write_to_file(outfile, operation, grid_2d_b[i][j]);
+          }
+        }
+      case 3:
+        for( i = sten_order; i < (dim_x-sten_order); i++ )
+        {
+          for( j = sten_order; j < (dim_y-sten_order); j++)
+          {
+            for( k = sten_order; k < (dim_z-sten_order); k++)
+            {
+              memset(operation, 0, sizeof(operation));
+              // Read operation
+              sprintf(operation, "RD");
+
+              // Central point
+              write_to_file(outfile, operation, grid_3d_a[i][j][k]);
+              // Orders points
+              for ( r = 1; r <= sten_order; r++ )
+              {
+                write_to_file(outfile, operation, grid_3d_a[i-r][j][k]);
+                write_to_file(outfile, operation, grid_3d_a[i+r][j][k]);
+                write_to_file(outfile, operation, grid_3d_a[i][j-r][k]);
+                write_to_file(outfile, operation, grid_3d_a[i][j+r][k]);
+                write_to_file(outfile, operation, grid_3d_a[i][j][k-r]);
+                write_to_file(outfile, operation, grid_3d_a[i][j][k+r]);
+              }
+
+              memset(operation, 0, sizeof(operation));
+              // Write operation
+              sprintf(operation, "WR");
+              write_to_file(outfile, operation, grid_3d_b[i][j][k]);
+            }
+          }
+        }
+      default:
+        printf("Error: Unknown dimension\n");
+        return -1;
+        break;
     }
 
   }
