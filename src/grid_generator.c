@@ -14,15 +14,47 @@
 #include <fcntl.h>
 
 #define SLOTS_PER_GB 134217728
-#define DEBUG
+// #define DEBUG
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int getshiftamount( uint32_t bsize,
                            uint32_t *shiftamt );
 
+
+// Write stencil information
+void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
+                     uint32_t cntr_size, int sten_order, char* data_type)
+{
+  uint32_t inner = 0;
+  switch(dim)
+  {
+    case 1:
+      inner = dim_x - sten_order * 2;
+      break;
+    case 2:
+      inner = (dim_x - sten_order * 2) * (dim_y - sten_order * 2);
+      break;
+    case 3:
+      inner = (dim_x - sten_order * 2) * (dim_y - sten_order * 2)
+            * (dim_z - sten_order * 2);
+      break;
+    default:
+      break;
+  }
+  fprintf(fp,"================================================\n");
+  fprintf(fp,"Stencil Dimension:  %"PRIX32", X: %d, Y: %d, Z: %d\n",
+          dim, dim_x, dim_y, dim_z);
+  fprintf(fp,"Stencil Grid Size:  %u\n", cntr_size);
+  fprintf(fp,"Stencil Order:      %d\n", sten_order);
+  fprintf(fp,"Stencil Inner Size: %u\n", inner);
+  fprintf(fp,"Stencil Data Type:  %s\n", data_type);
+  fprintf(fp,"================================================\n");
+}
+
+// Write traces
 void write_to_file(FILE* fp, char* op, uint64_t addr)
 {
-  fprintf(fp, "%s : 1 : 0x%016" PRIX64 "\n", op, addr);
+  fprintf(fp, "%s : 1 : 0x%016"PRIX64"\n", op, addr);
 }
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
@@ -41,9 +73,9 @@ int main(int argc, char* argv[])
    * b[i] = a[i]
    * Jocobi iteration stencil, read grid <--> write grid
    */
-  uint32_t dim_x = 0;
-  uint32_t dim_y = 0;
-  uint32_t dim_z = 0;
+  int dim_x = 0;
+  int dim_y = 0;
+  int dim_z = 0;
   uint32_t dim = 0;            // dimension of the grid
   uint32_t cntr_size = 0;      // container size
   uint64_t offset = 0x00ll;    // offset between base_a and base_b
@@ -54,7 +86,7 @@ int main(int argc, char* argv[])
   int sten_ptnum = 1;          // stencil computing elements
 
   /* HMC */
-  uint32_t capacity = 4;    // HMC capacity
+  uint32_t capacity = 0;    // HMC capacity
   uint32_t bsize = 0;       // HMC blocksize, the less significant bsize bits are ignored
   uint32_t shiftamt = 0;    // based on the blocksize, the consectutive addresses will be distribued across vaults
 
@@ -75,7 +107,7 @@ int main(int argc, char* argv[])
   uint64_t **grid_2d_b;        // pointer container
   uint64_t ***grid_3d_b;       // pointer container
 
-  while( (ret = getopt( argc, argv, "x:y:z:t:c:b:f:h")) != -1 )
+  while( (ret = getopt( argc, argv, "x:y:z:t:T:O:c:b:h")) != -1 )
   {
     switch( ret )
     {
@@ -103,29 +135,33 @@ int main(int argc, char* argv[])
       case 'b':
         bsize = (uint32_t)(atoi(optarg));
         break;
-      case 'f':
-        sprintf( filename, "%s", optarg);
-        break;
       case 'h':
         printf("%s%s%s\n", "usage : ", argv[0], " -xyztfh");
         printf(" -x <stencil grid size on dim x>\n");
         printf(" -y <stencil grid size on dim y>\n");
         printf(" -z <stencil grid size on dim z>\n");
         printf(" -t <stencil grid data type: Integer, Double>\n");
-        printf(" -T <stencil type: 0(Order varies), 1(2D-9points), 2(3D-27points)>\n", );
-        printf(" -O <stencil order>\n", );
+        printf(" -T <stencil type: 0(Order varies), 1(2D-9points), 2(3D-27points)>\n");
+        printf(" -O <stencil order>\n");
         printf(" -c <HMC capacity: 4, 8>");
         printf(" -b <HMC blocksize: 32, 64, 128, 256>");
-        printf(" -f <output trace file name>\n");
         printf(" h ...print help\n");
         return 0;
         break;
       default:
-          printf("%s%s%s\n", "Unknown option: see ", argv[0], " -xyztfh" );
+          printf("%s%s%s\n", "Unknown option: see ", argv[0], " -xyztTOcbh" );
           return -1;
           break;
     }
   }
+
+#ifdef DEBUG
+    printf("Dimension X is %" PRIX32"\n", dim_x);
+    printf("Dimension Y is %" PRIX32"\n", dim_y);
+    printf("Dimension Z is %" PRIX32"\n", dim_z);
+    printf("HMC capacity is %d\n", capacity);
+    printf("HMC blocksize is %" PRIX32"\n", bsize);
+#endif
 
   /* ---- Sanity Check ---- */
   if ( dim_x == 0 ) {
@@ -163,19 +199,21 @@ int main(int argc, char* argv[])
   if( dim_y == 0 )
   {
     dim = 1;
-    cntr_size = dim_x;
+    cntr_size = (uint32_t)dim_x;
   }
   else if( dim_z == 0 )
   {
     dim = 2;
-    cntr_size = dim_x * dim_y;
+    cntr_size = (uint32_t)((uint32_t)dim_x * (uint32_t)dim_y);
   }
   else
   {
     dim = 3;
-    cntr_size = dim_x * dim_y * dim_z;
+    cntr_size = (uint32_t)((uint32_t)dim_x * (uint32_t)dim_y * (uint32_t)dim_z);
   }
+
 #ifdef DEBUG
+        printf("%s%d\n", "Grid Dimension: ", dim);
         printf("%s%u\n", "Grid size: ", cntr_size);
 #endif
 
@@ -185,23 +223,23 @@ int main(int argc, char* argv[])
       if( sten_order > (dim_x - 1)/2 )
       {
         printf("ERROR: Stencil order is invalid\n");
+        return -1;
       }
-      return -1;
       break;
     case 2:
       if( sten_order > (dim_x - 1)/2 || sten_order > (dim_y - 1)/2 )
       {
         printf("ERROR: Stencil order is invalid\n");
+        return -1;
       }
-      return -1;
       break;
     case 3:
       if( sten_order > (dim_x - 1)/2 || sten_order > (dim_y - 1)/2
-          sten_order > (dim_z - 1)/2 )
+          || sten_order > (dim_z - 1)/2 )
       {
         printf("ERROR: Stencil order is invalid\n");
+        return -1;
       }
-      return -1;
       break;
     default:
       printf("Error: Unknown dimension\n");
@@ -210,6 +248,7 @@ int main(int argc, char* argv[])
   }
   /* ---- End Sanity Check ---- */
 
+  printf("%s\n", "Checking HMC capacity... ");
   /*
    * Make sure we have enough HMC capacity
    *
@@ -260,6 +299,8 @@ int main(int argc, char* argv[])
   /* Manually select 0xAFll as the start address, it can be any arbitrary address */
   base_a = (0xAFll) << (uint64_t)(shiftamt);
   base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
+
+  printf("%s\n", "Allocating memory space... ");
 
   /* Allocate contiguous memory space for storing stencil grid addresses*/
   data_cntr_a = (uint64_t *) malloc( sizeof( uint64_t ) * cntr_size);
@@ -320,6 +361,8 @@ int main(int argc, char* argv[])
       break;
   }
   /* End Allocation */
+
+  printf("%s\n", "Generating addresses... ");
 
   /* Generate memory addresses, store them in data container */
   switch(dim)
@@ -389,11 +432,16 @@ int main(int argc, char* argv[])
   if( sten_type == 2)
   {
     sprintf(filename, "../traces/3D-27points.out");
-    outfile = fopen(filename, "w");
+    outfile = fopen(filename, "a");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
     }
+
+    // Write Stencil information
+    write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
+                    cntr_size, sten_order, data_type);
+
     for( i = 1; i < (dim_x-1); i++ )
     {
       for( j = 1; j < (dim_y-1); j++ )
@@ -447,11 +495,16 @@ int main(int argc, char* argv[])
   if( sten_type == 1)
   {
     sprintf(filename, "../traces/2D-9points.out");
-    outfile = fopen(filename, "w");
+    outfile = fopen(filename, "a");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
     }
+
+    // Write Stencil information
+    write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
+                    cntr_size, sten_order, data_type);
+
     for( i = 1; i < (dim_x-1); i++ )
     {
       for( j = 1; j< (dim_y-1); j++ )
@@ -483,11 +536,16 @@ int main(int argc, char* argv[])
   {
     sten_ptnum = 2 * sten_order * dim + 1;
     sprintf(filename, "../traces/%dD-%dpoints-%d.out", dim, sten_ptnum, sten_order);
-    outfile = fopen(filename, "w");
+    outfile = fopen(filename, "a");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
     }
+
+    // Write Stencil information
+    write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
+                    cntr_size, sten_order, data_type);
+
     switch(dim)
     {
       case 1:
@@ -496,6 +554,10 @@ int main(int argc, char* argv[])
           memset(operation, 0, sizeof(operation));
           // Read operation
           sprintf(operation, "RD");
+
+#ifdef DEBUG
+          printf("%s : 1 : 0x%016" PRIX64 "\n", operation, grid_1d_a[i]);
+#endif
 
           // Central point
           write_to_file(outfile, operation, grid_1d_a[i]);
@@ -511,6 +573,7 @@ int main(int argc, char* argv[])
           sprintf(operation, "WR");
           write_to_file(outfile, operation, grid_1d_b[i]);
         }
+        break;
       case 2:
         for( i = sten_order; i < (dim_x-sten_order); i++ )
         {
@@ -537,6 +600,7 @@ int main(int argc, char* argv[])
             write_to_file(outfile, operation, grid_2d_b[i][j]);
           }
         }
+        break;
       case 3:
         for( i = sten_order; i < (dim_x-sten_order); i++ )
         {
@@ -568,6 +632,7 @@ int main(int argc, char* argv[])
             }
           }
         }
+        break;
       default:
         printf("Error: Unknown dimension\n");
         return -1;
