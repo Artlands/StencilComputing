@@ -20,10 +20,14 @@
 extern int getshiftamount( uint32_t bsize,
                            uint32_t *shiftamt );
 
+extern int getpimsid (int *pimsid,
+                     uint64_t addr,
+                     uint32_t shiftamt,
+                     uint32_t num_vaults);
 
 // Write stencil information
 void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
-                     uint32_t cntr_size, int sten_order, char* data_type)
+                     uint32_t cntr_size, int sten_order, int sten_coeff, char* data_type)
 {
   uint32_t inner = 0;
   switch(dim)
@@ -42,19 +46,24 @@ void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
       break;
   }
   fprintf(fp,"================================================\n");
-  fprintf(fp,"Stencil Dimension:  %u, X: %d, Y: %d, Z: %d\n",
+  fprintf(fp,"Stencil Dimension:    %u, X: %d, Y: %d, Z: %d\n",
           dim, dim_x, dim_y, dim_z);
-  fprintf(fp,"Stencil Grid Size:  %u\n", cntr_size);
-  fprintf(fp,"Stencil Order:      %d\n", sten_order);
-  fprintf(fp,"Stencil Inner Size: %u\n", inner);
-  fprintf(fp,"Stencil Data Type:  %s\n", data_type);
+  fprintf(fp,"Stencil Grid Size:    %u\n", cntr_size);
+  fprintf(fp,"Stencil Inner Size:   %u\n", inner);
+  fprintf(fp,"Stencil Order:        %d\n", sten_order);
+  fprintf(fp,"Stencil Coefficients: %d\n", sten_coeff);
+  fprintf(fp,"Stencil Data Type:    %s\n", data_type);
   fprintf(fp,"================================================\n");
 }
 
-// Write traces
-void write_to_file(FILE* fp, char* op, uint64_t addr)
+/*
+ * Write traces
+ * Format: {WR,RD,PIMS_RD}:{NUM_BYTES}:{PROCID}:{0xADDR}
+ *
+ */
+void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr)
 {
-  fprintf(fp, "%s : 1 : 0x%016"PRIX64"\n", op, addr);
+  fprintf(fp, "%s:%d:%d:0x%016"PRIX64"\n", op, num_bytes, procid, addr);
 }
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
@@ -84,18 +93,26 @@ int main(int argc, char* argv[])
   int sten_type = 0;           // stencil type: 0, 1, 2
   int sten_order = 1;          // stencil order
   int sten_ptnum = 1;          // stencil computing elements
+  int sten_coeff = 1;           // number of coefficients
+
 
   /* HMC */
   uint32_t capacity = 0;    // HMC capacity
   uint32_t bsize = 0;       // HMC blocksize, the less significant bsize bits are ignored
+  uint32_t vaults = 0;      // number of vaults
   uint32_t shiftamt = 0;    // based on the blocksize, the consectutive addresses will be distribued across vaults
+
+  /* PIMS */
+  int flag = 0;             // PIMS flag, without PIMS, flag = 0; with PIMS, flag = 1;
+  int procid;          // 32: request from host, 0-31: request from PIMS
 
   /* MEMORY TRACE */
   uint64_t base_a = 0x00ll;
   uint64_t base_b = 0x00ll;
   FILE *outfile = NULL;     // save trace file
   char filename[1024];
-  char operation[10];
+  char ops[10];
+  int num_bytes = 1;            // number of bytes for each ops
 
   /* MALLOC MEMORY*/
   uint64_t *data_cntr_a;       // data container
@@ -107,7 +124,7 @@ int main(int argc, char* argv[])
   uint64_t **grid_2d_b;        // pointer container
   uint64_t ***grid_3d_b;       // pointer container
 
-  while( (ret = getopt( argc, argv, "x:y:z:t:T:O:c:b:h")) != -1 )
+  while( (ret = getopt( argc, argv, "x:y:z:t:T:O:C:p:c:b:v:h")) != -1 )
   {
     switch( ret )
     {
@@ -129,11 +146,20 @@ int main(int argc, char* argv[])
       case 'O':
         sten_order = (int)(atoi(optarg));
         break;
+      case 'C':
+        sten_coeff = (int)(atoi(optarg));
+        break;
+      case 'p':
+        flag = (int)(atoi(optarg));
+        break;
       case 'c':
         capacity = (uint32_t)(atoi(optarg));
         break;
       case 'b':
         bsize = (uint32_t)(atoi(optarg));
+        break;
+      case 'v':
+        vaults = (uint32_t)(atoi(optarg));
         break;
       case 'h':
         printf("%s%s%s\n", "usage : ", argv[0], " -xyztfh");
@@ -143,13 +169,16 @@ int main(int argc, char* argv[])
         printf(" -t <stencil grid data type: Integer, Double>\n");
         printf(" -T <stencil type: 0(Order varies), 1(2D-9points), 2(3D-27points)>\n");
         printf(" -O <stencil order>\n");
+        printf(" -C <stencil number of coefficients>\n");
+        printf(" -p <PIMS flag: 0(without PIMS), 1(with PIMS)>\n");
         printf(" -c <HMC capacity: 4, 8>");
         printf(" -b <HMC blocksize: 32, 64, 128, 256>");
+        printf(" -v <HMC vaults: 16, 32>");
         printf(" h ...print help\n");
         return 0;
         break;
       default:
-          printf("%s%s%s\n", "Unknown option: see ", argv[0], " -xyztTOcbh" );
+          printf("%s%s%s\n", "Unknown option: see ", argv[0], " -xyztTOPcbvh" );
           return -1;
           break;
     }
@@ -185,6 +214,44 @@ int main(int argc, char* argv[])
     return -1;
   }
 
+  if( sten_coeff <= 0 )
+  {
+    printf("ERROR: Stencil number of coefficients is invalid\n");
+    return -1;
+  }
+
+  switch (sten_type) {
+    case 0:
+      if( sten_coeff > (2 * sten_order + 1) )
+      {
+        printf("ERROR: Stencil number of coefficients is invalid\n");
+        return -1;
+      }
+      break;
+    case 1:
+      if( sten_coeff > 9 )
+      {
+        printf("ERROR: Stencil number of coefficients is invalid\n");
+        return -1;
+      }
+      break;
+    case 2:
+      if( sten_coeff != 4 )
+      {
+        printf("ERROR: Stencil number of coefficients is invalid\n");
+        return -1;
+      }
+      break;
+    default:
+      return -1;
+      break;
+  }
+
+  if( flag != 0 && flag != 1) {
+    printf("ERROR: PIMS flag is invalid");
+    return -1;
+  }
+
   if ( capacity != 4 && capacity != 8 ) {
     printf("ERROR: Capacity is invalid\n");
     return -1;
@@ -192,6 +259,11 @@ int main(int argc, char* argv[])
 
   if ( bsize != 32 && bsize != 64 && bsize != 128 && bsize != 256 ) {
     printf("ERROR: Block size is invalid\n");
+    return -1;
+  }
+
+  if ( vaults != 16 && vaults != 32 ) {
+    printf("ERROR: Number of Vaults is invalid\n");
     return -1;
   }
 
@@ -289,6 +361,12 @@ int main(int argc, char* argv[])
     printf("ERROR: Failed to retrive shift amount\n");
     return -1;
   }
+
+  /*
+   * Init process id, default hostid = vaults
+   *
+   */
+  procid = vaults;
 
   /*
    * Caculate the base of each vector
@@ -424,14 +502,24 @@ int main(int argc, char* argv[])
   /* End Allocation */
 
   /*
-   * Generate memory traces based on the stencil type and order
+   * Generate memory traces based on the stencil type, order and if PIMS involves
    *
    */
 
   /* 3D-27 points */
   if( sten_type == 2)
   {
-    sprintf(filename, "../traces/3D-27points.out");
+    if( flag == 1)
+    {
+      sprintf(filename, "../traces/PIMS-3D-27points.out");
+      num_bytes = sten_coeff * (int)stor_size;
+    }
+    else
+    {
+      sprintf(filename, "../traces/3D-27points.out");
+      num_bytes = (int)stor_size;
+    }
+
     outfile = fopen(filename, "a");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
@@ -440,7 +528,7 @@ int main(int argc, char* argv[])
 
     // Write Stencil information
     write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-                    cntr_size, sten_order, data_type);
+                    cntr_size, sten_order, sten_coeff, data_type);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
@@ -449,92 +537,76 @@ int main(int argc, char* argv[])
       {
         for( k = 1; k < (dim_z-1); k++ )
         {
-          memset(operation, 0, sizeof(operation));
-          // Read operation
-          sprintf(operation, "RD");
-          write_to_file(outfile, operation, grid_3d_a[i][j][k]);
+          memset(ops, 0, sizeof(ops));
+          /*
+           * Read operation from HOST
+           * Length varies
+           * if PIMS, num_bytes = sten_coeff * stor_size
+           * else, num_bytes = stor_size
+           *
+           */
+          sprintf(ops, "RD");
+          write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k]);
 
-          write_to_file(outfile, operation, grid_3d_a[i-1][j][k]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j][k]);
-          write_to_file(outfile, operation, grid_3d_a[i][j-1][k]);
-          write_to_file(outfile, operation, grid_3d_a[i][j+1][k]);
-          write_to_file(outfile, operation, grid_3d_a[i][j][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i][j][k+1]);
+          if( flag == 1 )
+          {
+            if( getpimsid( &procid, grid_3d_a[i][j][k], shiftamt, vaults) !=0 )
+            {
+              printf("ERROR: Failed to retrive PIMS id\n");
+              goto cleanup;
+            }
+            memset(ops, 0, sizeof(ops));
+            /*
+             * Read operation from PIMS
+             * Length always stor_size
+             *
+             */
+            sprintf(ops, "PIMS_RD");
+            write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
+          }
+          else
+          {
+            memset(ops, 0, sizeof(ops));
+            // Read operation from HOST
+            sprintf(ops, "RD");
+          }
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j-1][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j+1][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k+1]);
 
-          write_to_file(outfile, operation, grid_3d_a[i-1][j][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i][j-1][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i][j+1][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i-1][j-1][k]);
-          write_to_file(outfile, operation, grid_3d_a[i-1][j+1][k]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j-1][k]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j+1][k]);
-          write_to_file(outfile, operation, grid_3d_a[i-1][j][k+1]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j][k+1]);
-          write_to_file(outfile, operation, grid_3d_a[i][j-1][k+1]);
-          write_to_file(outfile, operation, grid_3d_a[i][j+1][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j-1][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j+1][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j-1][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j+1][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j-1][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j+1][k]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j-1][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j+1][k+1]);
 
-          write_to_file(outfile, operation, grid_3d_a[i-1][j-1][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i-1][j+1][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j-1][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j+1][k-1]);
-          write_to_file(outfile, operation, grid_3d_a[i-1][j-1][k+1]);
-          write_to_file(outfile, operation, grid_3d_a[i-1][j+1][k+1]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j-1][k+1]);
-          write_to_file(outfile, operation, grid_3d_a[i+1][j+1][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j-1][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j+1][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j-1][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j+1][k-1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j-1][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j+1][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j-1][k+1]);
+          write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j+1][k+1]);
 
-          memset(operation, 0, sizeof(operation));
-          // Write operation
-          sprintf(operation, "WR");
-          write_to_file(outfile, operation, grid_3d_b[i][j][k]);
-        }
-      }
-    }
-    // Read grid b, wirte grid a
-    for( i = 1; i < (dim_x-1); i++ )
-    {
-      for( j = 1; j < (dim_y-1); j++ )
-      {
-        for( k = 1; k < (dim_z-1); k++ )
-        {
-          memset(operation, 0, sizeof(operation));
-          // Read operation
-          sprintf(operation, "RD");
-          write_to_file(outfile, operation, grid_3d_b[i][j][k]);
-
-          write_to_file(outfile, operation, grid_3d_b[i-1][j][k]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j][k]);
-          write_to_file(outfile, operation, grid_3d_b[i][j-1][k]);
-          write_to_file(outfile, operation, grid_3d_b[i][j+1][k]);
-          write_to_file(outfile, operation, grid_3d_b[i][j][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i][j][k+1]);
-
-          write_to_file(outfile, operation, grid_3d_b[i-1][j][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i][j-1][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i][j+1][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i-1][j-1][k]);
-          write_to_file(outfile, operation, grid_3d_b[i-1][j+1][k]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j-1][k]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j+1][k]);
-          write_to_file(outfile, operation, grid_3d_b[i-1][j][k+1]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j][k+1]);
-          write_to_file(outfile, operation, grid_3d_b[i][j-1][k+1]);
-          write_to_file(outfile, operation, grid_3d_b[i][j+1][k+1]);
-
-          write_to_file(outfile, operation, grid_3d_b[i-1][j-1][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i-1][j+1][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j-1][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j+1][k-1]);
-          write_to_file(outfile, operation, grid_3d_b[i-1][j-1][k+1]);
-          write_to_file(outfile, operation, grid_3d_b[i-1][j+1][k+1]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j-1][k+1]);
-          write_to_file(outfile, operation, grid_3d_b[i+1][j+1][k+1]);
-
-          memset(operation, 0, sizeof(operation));
-          // Write operation
-          sprintf(operation, "WR");
-          write_to_file(outfile, operation, grid_3d_a[i][j][k]);
+          memset(ops, 0, sizeof(ops));
+          /*
+           * Write operation from HOST
+           * Length always stor_size
+           *
+           */
+          sprintf(ops, "WR");
+          write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
         }
       }
     }
@@ -543,7 +615,17 @@ int main(int argc, char* argv[])
   /* 2D-9 points */
   if( sten_type == 1)
   {
-    sprintf(filename, "../traces/2D-9points.out");
+    if( flag == 1 )
+    {
+      sprintf(filename, "../traces/PIMS-2D-9points.out");
+      num_bytes = sten_coeff * (int)stor_size;
+    }
+    else
+    {
+      sprintf(filename, "../traces/2D-9points.out");
+      num_bytes = (int)stor_size;
+    }
+
     outfile = fopen(filename, "a");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
@@ -552,64 +634,84 @@ int main(int argc, char* argv[])
 
     // Write Stencil information
     write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-                    cntr_size, sten_order, data_type);
+                    cntr_size, sten_order, sten_coeff, data_type);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
     {
       for( j = 1; j< (dim_y-1); j++ )
       {
-        memset(operation, 0, sizeof(operation));
-        // Read operation
-        sprintf(operation, "RD");
-        write_to_file(outfile, operation, grid_2d_a[i-1][j]);
-        write_to_file(outfile, operation, grid_2d_a[i][j]);
-        write_to_file(outfile, operation, grid_2d_a[i+1][j]);
-        write_to_file(outfile, operation, grid_2d_a[i][j-1]);
-        write_to_file(outfile, operation, grid_2d_a[i][j+1]);
-        write_to_file(outfile, operation, grid_2d_a[i-1][j-1]);
-        write_to_file(outfile, operation, grid_2d_a[i+1][j-1]);
-        write_to_file(outfile, operation, grid_2d_a[i-1][j+1]);
-        write_to_file(outfile, operation, grid_2d_a[i+1][j+1]);
+        memset(ops, 0, sizeof(ops));
+        /*
+         * Read operation from HOST
+         * Length varies
+         * if PIMS, num_bytes = sten_coeff * stor_size
+         * else, num_bytes = stor_size
+         *
+         */
+        sprintf(ops, "RD");
+        write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
 
-        memset(operation, 0, sizeof(operation));
-        // Write operation
-        sprintf(operation, "WR");
-        write_to_file(outfile, operation, grid_2d_b[i][j]);
+        if( flag == 1)
+        {
+          if( getpimsid( &procid, grid_2d_a[i][j], shiftamt, vaults) != 0 )
+          {
+            printf("ERROR: Failed to retrive PIMS id\n");
+            goto cleanup;
+          }
+          memset(ops, 0, sizeof(ops));
+          /*
+           * Read operation from PIMS
+           * Length always stor_size
+           *
+           */
+          sprintf(ops, "PIMS_RD");
+          write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j]);
+        }
+        else
+        {
+          memset(ops, 0, sizeof(ops));
+          // Read operation from HOST
+          sprintf(ops, "RD");
+        }
+
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-1][j]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i+1][j]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j-1]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j+1]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-1][j-1]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i+1][j-1]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-1][j+1]);
+        write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i+1][j+1]);
+
+        memset(ops, 0, sizeof(ops));
+        /*
+         * Write operation from HOST
+         * Length always stor_size
+         *
+         */
+        sprintf(ops, "WR");
+        write_to_file(outfile, ops, stor_size, vaults, grid_2d_b[i][j]);
       }
     }
-    // Read grid b, wirte grid a
-    for( i = 1; i < (dim_x-1); i++ )
-    {
-      for( j = 1; j< (dim_y-1); j++ )
-      {
-        memset(operation, 0, sizeof(operation));
-        // Read operation
-        sprintf(operation, "RD");
-        write_to_file(outfile, operation, grid_2d_b[i-1][j]);
-        write_to_file(outfile, operation, grid_2d_b[i][j]);
-        write_to_file(outfile, operation, grid_2d_b[i+1][j]);
-        write_to_file(outfile, operation, grid_2d_b[i][j-1]);
-        write_to_file(outfile, operation, grid_2d_b[i][j+1]);
-        write_to_file(outfile, operation, grid_2d_b[i-1][j-1]);
-        write_to_file(outfile, operation, grid_2d_b[i+1][j-1]);
-        write_to_file(outfile, operation, grid_2d_b[i-1][j+1]);
-        write_to_file(outfile, operation, grid_2d_b[i+1][j+1]);
-
-        memset(operation, 0, sizeof(operation));
-        // Write operation
-        sprintf(operation, "WR");
-        write_to_file(outfile, operation, grid_2d_a[i][j]);
-      }
-    }
-
   }
 
   /* Order varies */
   if( sten_type == 0)
   {
     sten_ptnum = 2 * sten_order * dim + 1;
-    sprintf(filename, "../traces/%dD-%dpoints-%d.out", dim, sten_ptnum, sten_order);
+    if( flag == 1 )
+    {
+      sprintf(filename, "../traces/PIMS-%dD-%dpoints-%d.out",
+              dim, sten_ptnum, sten_order);
+      num_bytes = sten_coeff * (int)stor_size;
+    }
+    else
+    {
+      sprintf(filename, "../traces/%dD-%dpoints-%d.out",
+              dim, sten_ptnum, sten_order);
+    }
+
     outfile = fopen(filename, "a");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
@@ -618,7 +720,7 @@ int main(int argc, char* argv[])
 
     // Write Stencil information
     write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-                    cntr_size, sten_order, data_type);
+                    cntr_size, sten_order, sten_coeff, data_type);
 
     switch(dim)
     {
@@ -626,47 +728,55 @@ int main(int argc, char* argv[])
         // Read grid a, wirte grid b
         for( i = sten_order; i < (dim_x-sten_order); i++ )
         {
-          memset(operation, 0, sizeof(operation));
-          // Read operation
-          sprintf(operation, "RD");
+          memset(ops, 0, sizeof(ops));
+          // Read operation from HOST
+          sprintf(ops, "RD");
 
 #ifdef DEBUG
-          printf("%s : 1 : 0x%016" PRIX64 "\n", operation, grid_1d_a[i]);
+          printf("%s : 1 : 0x%016" PRIX64 "\n", ops, grid_1d_a[i]);
 #endif
 
           // Central point
-          write_to_file(outfile, operation, grid_1d_a[i]);
+          write_to_file(outfile, ops, num_bytes, vaults, grid_1d_a[i]);
+
+          if( flag == 1)
+          {
+            if( getpimsid( &procid, grid_1d_a[i], shiftamt, vaults )!= 0 )
+            {
+              printf("ERROR: Failed to retrive PIMS id\n");
+              goto cleanup;
+            }
+            memset(ops, 0, sizeof(ops));
+            /*
+             * Read operation from PIMS
+             * Length always stor_size
+             *
+             */
+            sprintf(ops, "PIMS_RD");
+            write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
+          }
+          else
+          {
+            memset(ops, 0, sizeof(ops));
+            // Read operation from HOST
+            sprintf(ops, "RD");
+          }
+
           // Orders points
           for( r = 1; r <= sten_order; r++)
           {
-            write_to_file(outfile, operation, grid_1d_a[i-r]);
-            write_to_file(outfile, operation, grid_1d_a[i+r]);
+            write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
+            write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
           }
 
-          memset(operation, 0, sizeof(operation));
-          // Write operation
-          sprintf(operation, "WR");
-          write_to_file(outfile, operation, grid_1d_b[i]);
-        }
-        // Read grid b, wirte grid a
-        for( i = sten_order; i < (dim_x-sten_order); i++ )
-        {
-          memset(operation, 0, sizeof(operation));
-          // Read operation
-          sprintf(operation, "RD");
-          // Central point
-          write_to_file(outfile, operation, grid_1d_b[i]);
-          // Orders points
-          for( r = 1; r <= sten_order; r++)
-          {
-            write_to_file(outfile, operation, grid_1d_b[i-r]);
-            write_to_file(outfile, operation, grid_1d_b[i+r]);
-          }
-
-          memset(operation, 0, sizeof(operation));
-          // Write operation
-          sprintf(operation, "WR");
-          write_to_file(outfile, operation, grid_1d_a[i]);
+          memset(ops, 0, sizeof(ops));
+          /*
+           * Write operation from HOST
+           * Length always stor_size
+           *
+           */
+          sprintf(ops, "WR");
+          write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
         }
         break;
       case 2:
@@ -675,51 +785,52 @@ int main(int argc, char* argv[])
         {
           for( j = sten_order; j < (dim_y-sten_order); j++ )
           {
-            memset(operation, 0, sizeof(operation));
-            // Read operation
-            sprintf(operation, "RD");
-
+            memset(ops, 0, sizeof(ops));
+            // Read operation from HOST
+            sprintf(ops, "RD");
             // Central point
-            write_to_file(outfile, operation, grid_2d_a[i][j]);
+            write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
+
+            if( flag == 1 )
+            {
+              if( getpimsid( &procid, grid_2d_a[i][j], shiftamt, vaults ) != 0)
+              {
+                printf("ERROR: Failed to retrive PIMS id\n");
+                goto cleanup;
+              }
+              memset(ops, 0, sizeof(ops));
+              /*
+               * Read operation from PIMS
+               * Length always stor_size
+               *
+               */
+              sprintf(ops, "PIMS_RD");
+              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j]);
+            }
+            else
+            {
+              memset(ops, 0, sizeof(ops));
+              // Read operation from HOST
+              sprintf(ops, "RD");
+            }
+
             // Orders points
             for( r = 1; r <= sten_order; r++ )
             {
-              write_to_file(outfile, operation, grid_2d_a[i-r][j]);
-              write_to_file(outfile, operation, grid_2d_a[i+r][j]);
-              write_to_file(outfile, operation, grid_2d_a[i][j-r]);
-              write_to_file(outfile, operation, grid_2d_a[i][j+r]);
+              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-r][j]);
+              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i+r][j]);
+              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j-r]);
+              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j+r]);
             }
 
-            memset(operation, 0, sizeof(operation));
-            // Write operation
-            sprintf(operation, "WR");
-            write_to_file(outfile, operation, grid_2d_b[i][j]);
-          }
-        }
-        // Read grid b, wirte grid a
-        for( i = sten_order; i < (dim_x-sten_order); i++ )
-        {
-          for( j = sten_order; j < (dim_y-sten_order); j++ )
-          {
-            memset(operation, 0, sizeof(operation));
-            // Read operation
-            sprintf(operation, "RD");
-
-            // Central point
-            write_to_file(outfile, operation, grid_2d_b[i][j]);
-            // Orders points
-            for( r = 1; r <= sten_order; r++ )
-            {
-              write_to_file(outfile, operation, grid_2d_b[i-r][j]);
-              write_to_file(outfile, operation, grid_2d_b[i+r][j]);
-              write_to_file(outfile, operation, grid_2d_b[i][j-r]);
-              write_to_file(outfile, operation, grid_2d_b[i][j+r]);
-            }
-
-            memset(operation, 0, sizeof(operation));
-            // Write operation
-            sprintf(operation, "WR");
-            write_to_file(outfile, operation, grid_2d_a[i][j]);
+            memset(ops, 0, sizeof(ops));
+            /*
+             * Write operation from HOST
+             * Length always stor_size
+             *
+             */
+            sprintf(ops, "WR");
+            write_to_file(outfile, ops, stor_size, vaults, grid_2d_b[i][j]);
           }
         }
         break;
@@ -731,73 +842,68 @@ int main(int argc, char* argv[])
           {
             for( k = sten_order; k < (dim_z-sten_order); k++)
             {
-              memset(operation, 0, sizeof(operation));
-              // Read operation
-              sprintf(operation, "RD");
-
+              memset(ops, 0, sizeof(ops));
+              // Read operation from HOST
+              sprintf(ops, "RD");
               // Central point
-              write_to_file(outfile, operation, grid_3d_a[i][j][k]);
+              write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k]);
+
+              if( flag == 1)
+              {
+                if( getpimsid( &procid, grid_3d_a[i][j][k], shiftamt, vaults) !=0 )
+                {
+                  printf("ERROR: Failed to retrive PIMS id\n");
+                  goto cleanup;
+                }
+                memset(ops, 0, sizeof(ops));
+                /*
+                 * Read operation from PIMS
+                 * Length always stor_size
+                 *
+                 */
+                sprintf(ops, "PIMS_RD");
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
+              }
+              else
+              {
+                memset(ops, 0, sizeof(ops));
+                // Read operation from HOST
+                sprintf(ops, "RD");
+              }
+
               // Orders points
               for ( r = 1; r <= sten_order; r++ )
               {
-                write_to_file(outfile, operation, grid_3d_a[i-r][j][k]);
-                write_to_file(outfile, operation, grid_3d_a[i+r][j][k]);
-                write_to_file(outfile, operation, grid_3d_a[i][j-r][k]);
-                write_to_file(outfile, operation, grid_3d_a[i][j+r][k]);
-                write_to_file(outfile, operation, grid_3d_a[i][j][k-r]);
-                write_to_file(outfile, operation, grid_3d_a[i][j][k+r]);
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j-r][k]);
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
+                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
               }
 
-              memset(operation, 0, sizeof(operation));
-              // Write operation
-              sprintf(operation, "WR");
-              write_to_file(outfile, operation, grid_3d_b[i][j][k]);
-            }
-          }
-        }
-        // Read grid b, wirte grid a
-        for( i = sten_order; i < (dim_x-sten_order); i++ )
-        {
-          for( j = sten_order; j < (dim_y-sten_order); j++)
-          {
-            for( k = sten_order; k < (dim_z-sten_order); k++)
-            {
-              memset(operation, 0, sizeof(operation));
-              // Read operation
-              sprintf(operation, "RD");
-
-              // Central point
-              write_to_file(outfile, operation, grid_3d_b[i][j][k]);
-              // Orders points
-              for ( r = 1; r <= sten_order; r++ )
-              {
-                write_to_file(outfile, operation, grid_3d_b[i-r][j][k]);
-                write_to_file(outfile, operation, grid_3d_b[i+r][j][k]);
-                write_to_file(outfile, operation, grid_3d_b[i][j-r][k]);
-                write_to_file(outfile, operation, grid_3d_b[i][j+r][k]);
-                write_to_file(outfile, operation, grid_3d_b[i][j][k-r]);
-                write_to_file(outfile, operation, grid_3d_b[i][j][k+r]);
-              }
-
-              memset(operation, 0, sizeof(operation));
-              // Write operation
-              sprintf(operation, "WR");
-              write_to_file(outfile, operation, grid_3d_a[i][j][k]);
+              memset(ops, 0, sizeof(ops));
+              // Write operation from HOST
+              sprintf(ops, "WR");
+              write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
             }
           }
         }
         break;
       default:
-        printf("Error: Unknown dimension\n");
         return -1;
         break;
     }
 
   }
 
-  fclose(outfile);
-
 cleanup:
+  /* Close file */
+  if( outfile != NULL )
+  {
+    fclose(outfile);
+  }
+
   /* Deallocate memory */
   switch(dim)
   {
@@ -817,7 +923,6 @@ cleanup:
       free(grid_3d_b);
       break;
     default:
-      printf("Error: Unknown dimension\n");
       return -1;
       break;
   }

@@ -18,9 +18,11 @@ $(SRC)/grid_generator.o: $(SRC)/grid_generator.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 $(SRC)/shiftamt.o: $(SRC)/shiftamt.c
 	$(CC) $(CFLAGS) -c -o $@ $<
+$(SRC)/pimsid.o: $(SRC)/pimsid.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-grid_generator: $(SRC)/grid_generator.o $(SRC)/shiftamt.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/grid_generator.o $(SRC)/shiftamt.o
+grid_generator: $(SRC)/grid_generator.o $(SRC)/shiftamt.o $(SRC)/pimsid.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/grid_generator.o $(SRC)/shiftamt.o $(SRC)/pimsid.o
 
 clean:
 	rm -Rf ./src/*.o
