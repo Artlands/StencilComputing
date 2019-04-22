@@ -42,7 +42,7 @@ void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
       break;
   }
   fprintf(fp,"================================================\n");
-  fprintf(fp,"Stencil Dimension:  %"PRIX32", X: %d, Y: %d, Z: %d\n",
+  fprintf(fp,"Stencil Dimension:  %u, X: %d, Y: %d, Z: %d\n",
           dim, dim_x, dim_y, dim_z);
   fprintf(fp,"Stencil Grid Size:  %u\n", cntr_size);
   fprintf(fp,"Stencil Order:      %d\n", sten_order);
