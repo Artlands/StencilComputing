@@ -1,9 +1,9 @@
 #!/bin/bash
 
 GENERATOR=../grid_generator
-DIM_X=128
-DIM_Y=128
-DIM_Z=128
+DIM_X=64
+DIM_Y=64
+DIM_Z=64
 GRID_TYPE=double
 # GRID_TYPE=Integer
 STEN_TYPE=2

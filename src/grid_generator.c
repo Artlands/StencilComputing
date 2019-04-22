@@ -442,6 +442,7 @@ int main(int argc, char* argv[])
     write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
                     cntr_size, sten_order, data_type);
 
+    // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
     {
       for( j = 1; j < (dim_y-1); j++ )
@@ -489,6 +490,54 @@ int main(int argc, char* argv[])
         }
       }
     }
+    // Read grid b, wirte grid a
+    for( i = 1; i < (dim_x-1); i++ )
+    {
+      for( j = 1; j < (dim_y-1); j++ )
+      {
+        for( k = 1; k < (dim_z-1); k++ )
+        {
+          memset(operation, 0, sizeof(operation));
+          // Read operation
+          sprintf(operation, "RD");
+          write_to_file(outfile, operation, grid_3d_b[i][j][k]);
+
+          write_to_file(outfile, operation, grid_3d_b[i-1][j][k]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j][k]);
+          write_to_file(outfile, operation, grid_3d_b[i][j-1][k]);
+          write_to_file(outfile, operation, grid_3d_b[i][j+1][k]);
+          write_to_file(outfile, operation, grid_3d_b[i][j][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i][j][k+1]);
+
+          write_to_file(outfile, operation, grid_3d_b[i-1][j][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i][j-1][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i][j+1][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i-1][j-1][k]);
+          write_to_file(outfile, operation, grid_3d_b[i-1][j+1][k]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j-1][k]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j+1][k]);
+          write_to_file(outfile, operation, grid_3d_b[i-1][j][k+1]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j][k+1]);
+          write_to_file(outfile, operation, grid_3d_b[i][j-1][k+1]);
+          write_to_file(outfile, operation, grid_3d_b[i][j+1][k+1]);
+
+          write_to_file(outfile, operation, grid_3d_b[i-1][j-1][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i-1][j+1][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j-1][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j+1][k-1]);
+          write_to_file(outfile, operation, grid_3d_b[i-1][j-1][k+1]);
+          write_to_file(outfile, operation, grid_3d_b[i-1][j+1][k+1]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j-1][k+1]);
+          write_to_file(outfile, operation, grid_3d_b[i+1][j+1][k+1]);
+
+          memset(operation, 0, sizeof(operation));
+          // Write operation
+          sprintf(operation, "WR");
+          write_to_file(outfile, operation, grid_3d_a[i][j][k]);
+        }
+      }
+    }
   }
 
   /* 2D-9 points */
@@ -505,6 +554,7 @@ int main(int argc, char* argv[])
     write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
                     cntr_size, sten_order, data_type);
 
+    // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
     {
       for( j = 1; j< (dim_y-1); j++ )
@@ -528,6 +578,30 @@ int main(int argc, char* argv[])
         write_to_file(outfile, operation, grid_2d_b[i][j]);
       }
     }
+    // Read grid b, wirte grid a
+    for( i = 1; i < (dim_x-1); i++ )
+    {
+      for( j = 1; j< (dim_y-1); j++ )
+      {
+        memset(operation, 0, sizeof(operation));
+        // Read operation
+        sprintf(operation, "RD");
+        write_to_file(outfile, operation, grid_2d_b[i-1][j]);
+        write_to_file(outfile, operation, grid_2d_b[i][j]);
+        write_to_file(outfile, operation, grid_2d_b[i+1][j]);
+        write_to_file(outfile, operation, grid_2d_b[i][j-1]);
+        write_to_file(outfile, operation, grid_2d_b[i][j+1]);
+        write_to_file(outfile, operation, grid_2d_b[i-1][j-1]);
+        write_to_file(outfile, operation, grid_2d_b[i+1][j-1]);
+        write_to_file(outfile, operation, grid_2d_b[i-1][j+1]);
+        write_to_file(outfile, operation, grid_2d_b[i+1][j+1]);
+
+        memset(operation, 0, sizeof(operation));
+        // Write operation
+        sprintf(operation, "WR");
+        write_to_file(outfile, operation, grid_2d_a[i][j]);
+      }
+    }
 
   }
 
@@ -549,6 +623,7 @@ int main(int argc, char* argv[])
     switch(dim)
     {
       case 1:
+        // Read grid a, wirte grid b
         for( i = sten_order; i < (dim_x-sten_order); i++ )
         {
           memset(operation, 0, sizeof(operation));
@@ -573,8 +648,29 @@ int main(int argc, char* argv[])
           sprintf(operation, "WR");
           write_to_file(outfile, operation, grid_1d_b[i]);
         }
+        // Read grid b, wirte grid a
+        for( i = sten_order; i < (dim_x-sten_order); i++ )
+        {
+          memset(operation, 0, sizeof(operation));
+          // Read operation
+          sprintf(operation, "RD");
+          // Central point
+          write_to_file(outfile, operation, grid_1d_b[i]);
+          // Orders points
+          for( r = 1; r <= sten_order; r++)
+          {
+            write_to_file(outfile, operation, grid_1d_b[i-r]);
+            write_to_file(outfile, operation, grid_1d_b[i+r]);
+          }
+
+          memset(operation, 0, sizeof(operation));
+          // Write operation
+          sprintf(operation, "WR");
+          write_to_file(outfile, operation, grid_1d_a[i]);
+        }
         break;
       case 2:
+        // Read grid a, wirte grid b
         for( i = sten_order; i < (dim_x-sten_order); i++ )
         {
           for( j = sten_order; j < (dim_y-sten_order); j++ )
@@ -600,8 +696,35 @@ int main(int argc, char* argv[])
             write_to_file(outfile, operation, grid_2d_b[i][j]);
           }
         }
+        // Read grid b, wirte grid a
+        for( i = sten_order; i < (dim_x-sten_order); i++ )
+        {
+          for( j = sten_order; j < (dim_y-sten_order); j++ )
+          {
+            memset(operation, 0, sizeof(operation));
+            // Read operation
+            sprintf(operation, "RD");
+
+            // Central point
+            write_to_file(outfile, operation, grid_2d_b[i][j]);
+            // Orders points
+            for( r = 1; r <= sten_order; r++ )
+            {
+              write_to_file(outfile, operation, grid_2d_b[i-r][j]);
+              write_to_file(outfile, operation, grid_2d_b[i+r][j]);
+              write_to_file(outfile, operation, grid_2d_b[i][j-r]);
+              write_to_file(outfile, operation, grid_2d_b[i][j+r]);
+            }
+
+            memset(operation, 0, sizeof(operation));
+            // Write operation
+            sprintf(operation, "WR");
+            write_to_file(outfile, operation, grid_2d_a[i][j]);
+          }
+        }
         break;
       case 3:
+        // Read grid a, wirte grid b
         for( i = sten_order; i < (dim_x-sten_order); i++ )
         {
           for( j = sten_order; j < (dim_y-sten_order); j++)
@@ -629,6 +752,37 @@ int main(int argc, char* argv[])
               // Write operation
               sprintf(operation, "WR");
               write_to_file(outfile, operation, grid_3d_b[i][j][k]);
+            }
+          }
+        }
+        // Read grid b, wirte grid a
+        for( i = sten_order; i < (dim_x-sten_order); i++ )
+        {
+          for( j = sten_order; j < (dim_y-sten_order); j++)
+          {
+            for( k = sten_order; k < (dim_z-sten_order); k++)
+            {
+              memset(operation, 0, sizeof(operation));
+              // Read operation
+              sprintf(operation, "RD");
+
+              // Central point
+              write_to_file(outfile, operation, grid_3d_b[i][j][k]);
+              // Orders points
+              for ( r = 1; r <= sten_order; r++ )
+              {
+                write_to_file(outfile, operation, grid_3d_b[i-r][j][k]);
+                write_to_file(outfile, operation, grid_3d_b[i+r][j][k]);
+                write_to_file(outfile, operation, grid_3d_b[i][j-r][k]);
+                write_to_file(outfile, operation, grid_3d_b[i][j+r][k]);
+                write_to_file(outfile, operation, grid_3d_b[i][j][k-r]);
+                write_to_file(outfile, operation, grid_3d_b[i][j][k+r]);
+              }
+
+              memset(operation, 0, sizeof(operation));
+              // Write operation
+              sprintf(operation, "WR");
+              write_to_file(outfile, operation, grid_3d_a[i][j][k]);
             }
           }
         }
