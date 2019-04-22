@@ -45,15 +45,15 @@ void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
     default:
       break;
   }
-  fprintf(fp,"================================================\n");
-  fprintf(fp,"Stencil Dimension:    %u, X: %d, Y: %d, Z: %d\n",
+  fprintf(fp,"#================================================\n");
+  fprintf(fp,"# Stencil Dimension:    %u, X: %d, Y: %d, Z: %d\n",
           dim, dim_x, dim_y, dim_z);
-  fprintf(fp,"Stencil Grid Size:    %u\n", cntr_size);
-  fprintf(fp,"Stencil Inner Size:   %u\n", inner);
-  fprintf(fp,"Stencil Order:        %d\n", sten_order);
-  fprintf(fp,"Stencil Coefficients: %d\n", sten_coeff);
-  fprintf(fp,"Stencil Data Type:    %s\n", data_type);
-  fprintf(fp,"================================================\n");
+  fprintf(fp,"# Stencil Grid Size:    %u\n", cntr_size);
+  fprintf(fp,"# Stencil Inner Size:   %u\n", inner);
+  fprintf(fp,"# Stencil Order:        %d\n", sten_order);
+  fprintf(fp,"# Stencil Coefficients: %d\n", sten_coeff);
+  fprintf(fp,"# Stencil Data Type:    %s\n", data_type);
+  fprintf(fp,"#================================================\n");
 }
 
 /*
@@ -206,6 +206,16 @@ int main(int argc, char* argv[])
 
   if ( sten_type != 0 && sten_type != 1 && sten_type != 2 ) {
     printf("ERROR: Stencil type is invalid\n");
+    return -1;
+  }
+
+  if( sten_type == 1 && dim_y == 0) {
+    printf("ERROR: Grid size is invalid\n");
+    return -1;
+  }
+
+  if( (sten_type == 2 && dim_y == 0) || (sten_type == 2 && dim_z == 0)) {
+    printf("ERROR: Grid size is invalid\n");
     return -1;
   }
 
@@ -545,7 +555,7 @@ int main(int argc, char* argv[])
            * else, num_bytes = stor_size
            *
            */
-          sprintf(ops, "RD");
+          sprintf(ops, "HOST_RD");
           write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k]);
 
           if( flag == 1 )
@@ -568,7 +578,7 @@ int main(int argc, char* argv[])
           {
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
-            sprintf(ops, "RD");
+            sprintf(ops, "HOST_RD");
           }
           write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-1][j][k]);
           write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+1][j][k]);
@@ -605,7 +615,7 @@ int main(int argc, char* argv[])
            * Length always stor_size
            *
            */
-          sprintf(ops, "WR");
+          sprintf(ops, "HOST_WR");
           write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
         }
       }
@@ -649,7 +659,7 @@ int main(int argc, char* argv[])
          * else, num_bytes = stor_size
          *
          */
-        sprintf(ops, "RD");
+        sprintf(ops, "HOST_RD");
         write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
 
         if( flag == 1)
@@ -672,7 +682,7 @@ int main(int argc, char* argv[])
         {
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
-          sprintf(ops, "RD");
+          sprintf(ops, "HOST_RD");
         }
 
         write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-1][j]);
@@ -690,7 +700,7 @@ int main(int argc, char* argv[])
          * Length always stor_size
          *
          */
-        sprintf(ops, "WR");
+        sprintf(ops, "HOST_WR");
         write_to_file(outfile, ops, stor_size, vaults, grid_2d_b[i][j]);
       }
     }
@@ -710,6 +720,7 @@ int main(int argc, char* argv[])
     {
       sprintf(filename, "../traces/%dD-%dpoints-%d.out",
               dim, sten_ptnum, sten_order);
+      num_bytes = (int)stor_size;
     }
 
     outfile = fopen(filename, "a");
@@ -730,7 +741,7 @@ int main(int argc, char* argv[])
         {
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
-          sprintf(ops, "RD");
+          sprintf(ops, "HOST_RD");
 
 #ifdef DEBUG
           printf("%s : 1 : 0x%016" PRIX64 "\n", ops, grid_1d_a[i]);
@@ -759,7 +770,7 @@ int main(int argc, char* argv[])
           {
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
-            sprintf(ops, "RD");
+            sprintf(ops, "HOST_RD");
           }
 
           // Orders points
@@ -775,7 +786,7 @@ int main(int argc, char* argv[])
            * Length always stor_size
            *
            */
-          sprintf(ops, "WR");
+          sprintf(ops, "HOST_WR");
           write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
         }
         break;
@@ -787,7 +798,7 @@ int main(int argc, char* argv[])
           {
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
-            sprintf(ops, "RD");
+            sprintf(ops, "HOST_RD");
             // Central point
             write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
 
@@ -811,7 +822,7 @@ int main(int argc, char* argv[])
             {
               memset(ops, 0, sizeof(ops));
               // Read operation from HOST
-              sprintf(ops, "RD");
+              sprintf(ops, "HOST_RD");
             }
 
             // Orders points
@@ -829,7 +840,7 @@ int main(int argc, char* argv[])
              * Length always stor_size
              *
              */
-            sprintf(ops, "WR");
+            sprintf(ops, "HOST_WR");
             write_to_file(outfile, ops, stor_size, vaults, grid_2d_b[i][j]);
           }
         }
@@ -844,7 +855,7 @@ int main(int argc, char* argv[])
             {
               memset(ops, 0, sizeof(ops));
               // Read operation from HOST
-              sprintf(ops, "RD");
+              sprintf(ops, "HOST_RD");
               // Central point
               write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k]);
 
@@ -868,7 +879,7 @@ int main(int argc, char* argv[])
               {
                 memset(ops, 0, sizeof(ops));
                 // Read operation from HOST
-                sprintf(ops, "RD");
+                sprintf(ops, "HOST_RD");
               }
 
               // Orders points
@@ -884,7 +895,7 @@ int main(int argc, char* argv[])
 
               memset(ops, 0, sizeof(ops));
               // Write operation from HOST
-              sprintf(ops, "WR");
+              sprintf(ops, "HOST_WR");
               write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
             }
           }
