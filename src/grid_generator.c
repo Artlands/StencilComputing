@@ -385,7 +385,7 @@ int main(int argc, char* argv[])
   offset = (uint64_t)(cntr_size * (stor_size + 1));
 
   /* Manually select 0xAFll as the start address, it can be any arbitrary address */
-  base_a = (0xAFll) << (uint64_t)(shiftamt);
+  base_a = (0x6Dll) << (uint64_t)(shiftamt);
   base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
 
   printf("%s\n", "Allocating memory space... ");
@@ -452,15 +452,21 @@ int main(int argc, char* argv[])
 
   printf("%s\n", "Generating addresses... ");
 
-  /* Generate memory addresses, store them in data container */
+  /*
+   * Generate memory addresses, store them in data container
+   * Ignore the least n bits based on the blocksize
+   * stor_size is set to 1 in order to force sequential addressing
+   * to be spread across different vaults
+   *
+   */
   switch(dim)
   {
     case 1:
       for ( i = 0; i < dim_x; i++ )
       {
-        grid_1d_a[i] = (uint64_t)( base_a + (((uint64_t)(i) * stor_size)
+        grid_1d_a[i] = (uint64_t)( base_a + (((uint64_t)(i) * 1)
                                    << (uint64_t)(shiftamt)) );
-        grid_1d_b[i] = (uint64_t)( base_b + (((uint64_t)(i) * stor_size)
+        grid_1d_b[i] = (uint64_t)( base_b + (((uint64_t)(i) * 1)
                                    << (uint64_t)(shiftamt)) );
 #ifdef DEBUG
         printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
@@ -474,9 +480,9 @@ int main(int argc, char* argv[])
         for( j = 0; j < dim_y; j++)
         {
           grid_2d_a[i][j] = (uint64_t)( base_a + (((uint64_t)(j + i * dim_y)
-                                        * stor_size) << (uint64_t)(shiftamt)) );
+                                        * 1) << (uint64_t)(shiftamt)) );
           grid_2d_b[i][j] = (uint64_t)( base_b + (((uint64_t)(j + i * dim_y)
-                                        * stor_size) << (uint64_t)(shiftamt)) );
+                                        * 1) << (uint64_t)(shiftamt)) );
 #ifdef DEBUG
           printf("%s%016" PRIX64 "\n", "A grid address: ", grid_2d_a[i][j]);
           printf("%s%016" PRIX64 "\n", "B grid address: ", grid_2d_b[i][j]);
@@ -492,10 +498,10 @@ int main(int argc, char* argv[])
           for( k = 0; k < dim_z; k++)
           {
             grid_3d_a[i][j][k] = (uint64_t)( base_a + (((uint64_t)(k + (j + i
-                                             * dim_y) * dim_z) * stor_size)
+                                             * dim_y) * dim_z) * 1)
                                              << (uint64_t)(shiftamt)) );
             grid_3d_b[i][j][k] = (uint64_t)( base_b + (((uint64_t)(k + (j + i
-                                             * dim_y) * dim_z) * stor_size)
+                                             * dim_y) * dim_z) * 1)
                                              << (uint64_t)(shiftamt)) );
 #ifdef DEBUG
            printf("%s%016" PRIX64 "\n", "A grid address: ", grid_3d_a[i][j][k]);
