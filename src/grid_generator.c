@@ -382,10 +382,10 @@ int main(int argc, char* argv[])
    * Caculate the base of each vector
    *
    */
-  offset = (uint64_t)(cntr_size * (stor_size + 1));
+  offset = (uint64_t)(stor_size * (cntr_size + 1));
 
-  /* Manually select 0xAFll as the start address, it can be any arbitrary address */
-  base_a = (0x6Dll) << (uint64_t)(shiftamt);
+  /* Manually select the start address, it can be any arbitrary address */
+  base_a = (0x00ll) + ((stor_size) << (uint64_t)(shiftamt));
   base_b = base_a + ( (offset) << (uint64_t)(shiftamt) );
 
   printf("%s\n", "Allocating memory space... ");
@@ -470,7 +470,7 @@ int main(int argc, char* argv[])
                                    << (uint64_t)(shiftamt)) );
 #ifdef DEBUG
         printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
-        printf("%s%016" PRIX64 "\n", "B grid address: ", grid_1d_b[i]);
+        // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_1d_b[i]);
 #endif
       }
       break;
@@ -485,7 +485,7 @@ int main(int argc, char* argv[])
                                         * 1) << (uint64_t)(shiftamt)) );
 #ifdef DEBUG
           printf("%s%016" PRIX64 "\n", "A grid address: ", grid_2d_a[i][j]);
-          printf("%s%016" PRIX64 "\n", "B grid address: ", grid_2d_b[i][j]);
+          // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_2d_b[i][j]);
 #endif
         }
       }
@@ -505,7 +505,7 @@ int main(int argc, char* argv[])
                                              << (uint64_t)(shiftamt)) );
 #ifdef DEBUG
            printf("%s%016" PRIX64 "\n", "A grid address: ", grid_3d_a[i][j][k]);
-           printf("%s%016" PRIX64 "\n", "B grid address: ", grid_3d_b[i][j][k]);
+           // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_3d_b[i][j][k]);
 #endif
           }
         }
@@ -527,16 +527,18 @@ int main(int argc, char* argv[])
   {
     if( flag == 1)
     {
-      sprintf(filename, "../traces/PIMS-3D-27points.out");
+      sprintf(filename, "../traces/PIMS-3D-27points-X%dY%dZ%d.out",
+              dim_x, dim_y, dim_z);
       num_bytes = sten_coeff * (int)stor_size;
     }
     else
     {
-      sprintf(filename, "../traces/3D-27points.out");
+      sprintf(filename, "../traces/3D-27points-X%dY%dZ%d.out",
+              dim_x, dim_y, dim_z);
       num_bytes = (int)stor_size;
     }
 
-    outfile = fopen(filename, "a");
+    outfile = fopen(filename, "w");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
@@ -633,16 +635,18 @@ int main(int argc, char* argv[])
   {
     if( flag == 1 )
     {
-      sprintf(filename, "../traces/PIMS-2D-9points.out");
+      sprintf(filename, "../traces/PIMS-2D-9points-X%dY%d.out",
+              dim_x, dim_y);
       num_bytes = sten_coeff * (int)stor_size;
     }
     else
     {
-      sprintf(filename, "../traces/2D-9points.out");
+      sprintf(filename, "../traces/2D-9points-X%dY%d.out",
+              dim_x, dim_y);
       num_bytes = (int)stor_size;
     }
 
-    outfile = fopen(filename, "a");
+    outfile = fopen(filename, "w");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
@@ -718,18 +722,18 @@ int main(int argc, char* argv[])
     sten_ptnum = 2 * sten_order * dim + 1;
     if( flag == 1 )
     {
-      sprintf(filename, "../traces/PIMS-%dD-%dpoints-%d.out",
-              dim, sten_ptnum, sten_order);
+      sprintf(filename, "../traces/PIMS-%dD-%dpoints-O%dX%dY%dZ%d.out",
+              dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
       num_bytes = sten_coeff * (int)stor_size;
     }
     else
     {
-      sprintf(filename, "../traces/%dD-%dpoints-%d.out",
-              dim, sten_ptnum, sten_order);
+      sprintf(filename, "../traces/%dD-%dpoints-O%dX%dY%dZ%d.out",
+              dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
       num_bytes = (int)stor_size;
     }
 
-    outfile = fopen(filename, "a");
+    outfile = fopen(filename, "w");
     if( outfile == NULL ) {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
@@ -749,12 +753,11 @@ int main(int argc, char* argv[])
           // Read operation from HOST
           sprintf(ops, "HOST_RD");
 
-#ifdef DEBUG
-          printf("%s : 1 : 0x%016" PRIX64 "\n", ops, grid_1d_a[i]);
-#endif
-
           // Central point
           write_to_file(outfile, ops, num_bytes, vaults, grid_1d_a[i]);
+#ifdef DEBUG
+          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, vaults, grid_1d_a[i]);
+#endif
 
           if( flag == 1)
           {
@@ -771,6 +774,9 @@ int main(int argc, char* argv[])
              */
             sprintf(ops, "PIMS_RD");
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
+#ifdef DEBUG
+          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i]);
+#endif
           }
           else
           {
@@ -784,6 +790,10 @@ int main(int argc, char* argv[])
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
+#ifdef DEBUG
+          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i-r]);
+          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i+r]);
+#endif
           }
 
           memset(ops, 0, sizeof(ops));
