@@ -385,7 +385,7 @@ int main(int argc, char* argv[])
   offset = (uint64_t)(stor_size * (cntr_size + 1));
 
   /* Manually select the start address, it can be any arbitrary address */
-  base_a = 0x8Dll;
+  base_a = 0x0000004F72CE2091;
   base_b = base_a + offset;
 
   printf("%s\n", "Allocating memory space... ");
