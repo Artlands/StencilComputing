@@ -119,8 +119,9 @@
 int main(int argc, char* argv[])
 {
   /* vars */
-  int ret = 0;
   int i = 0;
+  int ret = 0;
+  int done = 0;
 
   /* PAGE TABLE*/
   uint32_t capacity = 0;            // HMC capacity
@@ -202,17 +203,29 @@ int main(int argc, char* argv[])
   }
 
   /* read first request from the input file */
-  ret = read_trace( infile, &trace );
-  while( ret != 0 ){
-    ret = read_trace( infile, &trace);
+  done = read_trace( infile, &trace );
+  while( done != 0 ){
+    done = read_trace( infile, &trace);
   }
 
   /* read all traces until to the end of file */
-  while( ret == 0 ){
+  while( done == 0 ){
     /*
      * translate virtual memory address to physical memory address
      *
      */
+     ret = mapVirtualAddr(virtualAddr, pageSize,
+                          entries, pageTable, &physicalAddr);
+     if ( ret == 0 ){
+       /* write trace */
+     }
+
+     /* read next request from the input file */
+     // done = read_trace( infile, &trace );
+     // while( done == 2 ){
+     //   done = read_trace( infile, &trace);
+     // }
+
   }
 
   fclose(infile);
