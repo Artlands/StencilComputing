@@ -82,6 +82,7 @@
 
  static int mapVirtualAddr(uint64_t virtualAddr,
                            uint32_t pageSize,
+                           uint32_t entries,
                            struct pageTableNode pageTable,
                            uint64_t *physicalAddr)
 {
@@ -100,7 +101,12 @@
   {
     i++;
   }
-  
+
+  if（ i>= entries )
+  {
+    pageFrame = pageTable[0].pageFrame;
+  }
+
   return 0;
 }
 
