@@ -1,7 +1,7 @@
 /*
  * _GRID_GENERATOR_C_
  *
- * FUNCTION TO GENERATOR STENCIL GRID ADDRESSES
+ * FUNCTION TO GENERATOR STENCIL GRID VIRTUAL MEMORY ADDRESSES
  *
  */
 
@@ -69,7 +69,7 @@ void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr)
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
 {
-  /*vars*/
+  /* vars */
   int ret = 0;
   int i = 0;
   int j = 0;
