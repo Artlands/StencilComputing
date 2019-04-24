@@ -3,96 +3,109 @@
  *
  * FUNCTION TO TRANSLATE VIRTUAL MEMORY ADDRESSES TO PHYSICAL MEMORY ADDRESSES
  *
+ * LFU function refers to https://github.com/ktno43/Virtual-Memory-Addressing/blob/master/Source.c
+ *
  */
 
- /* Included files*/
- #include <stdio.h>
- #include <stdlib.h>
+/* Included files*/
+#include <stdio.h>
+#include <stdlib.h>
 
- #define 4K_PAGESIZE 4096
- #define 1_GB 1073741824
- #define DEBUG
+#define DEBUG
 
- /* ---------------------------------------------- DATA STRUCTURE*/
- typedef struct
- {
-   int64_t virtualPage;
-   int64_t pageFrame;
-   int64_t hit;
- }pageTableNode;
+/* Physical Memory Parameters */
+#define 4K_PAGESIZE 4096
+#define 1_GB 1073741824
 
- typedef struct
- {
-   char op[10];
-   int num_bytes;
-   int procid;
-   uint64_t addr;
- }traceNode;
+/* Masks for Virtual address */
+#define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
+#define VIRTUAL_OFFSET_MASK 0x0000000000000FFF
+#define VIRTUAL_PAGE_SHIFT 8
 
- /* ---------------------------------------------- FUNCTION PROTOTYPES*/
- static int read_trace( FILE *infile, struct traceNode *trace)
- {
-   /* vars */
-   char buf[50];
-   char *token;
-   size_t len = 0;
 
-   /* read a single entry from the trace file */
-   if( feof(infile) ){
-     return -2;
-   }
-   if( fgets( buf, 50, infile ) == NULL ){
-     return -1;
-   }
+/* ---------------------------------------------- DATA STRUCTURE*/
+typedef struct
+{
+ int64_t virtualPage;
+ int64_t pageFrame;
+ int64_t hit;
+}pageTableNode;
 
-   /*
-    * we have a valid buffer
-    * strip the newline and tokenize it
-    */
-   len = strlen( buf );
-   if( buf[len] == '\n' ){
-     buf[len] = '\0';
-   }
+typedef struct
+{
+ char op[10];
+ int num_bytes;
+ int procid;
+ uint64_t addr;
+}traceNode;
 
-   if( buf[0] == '#' ){
-     // not a valid trace
-     return -1;
-   }
+/* ---------------------------------------------- FUNCTION PROTOTYPES*/
+static int read_trace( FILE *infile, struct traceNode *trace)
+{
+ /* vars */
+ char buf[50];
+ char *token;
+ size_t len = 0;
 
-   /* tokenize it */
-   token = strtok( buf, ":");
-   strcpy(trace->op, token);
-
-   /* num_bytes */
-   token = strtok( NULL, ":");
-   trace->num_bytes = (int)(atoi(token));
-
-   /* procid */
-   token = strtok( NULL, ":");
-   trace->procid = (int)(atoi(token));
-
-   /* first part of address = 0x */
-   token = strtok( NULL, "x");
-   /* last part of address in hex */
-   token = strtok( NULL, " ");
-   trace->addr = (uint64_t)(strtol( token, NULL, 16 ));
-
-   return 0;
+ /* read a single entry from the trace file */
+ if( feof(infile) ){
+   return -2;
+ }
+ if( fgets( buf, 50, infile ) == NULL ){
+   return -1;
  }
 
- static int mapVirtualAddr(uint64_t virtualAddr,
-                           uint32_t pageSize,
-                           uint32_t entries,
-                           struct pageTableNode pageTable,
-                           uint64_t *physicalAddr)
+ /*
+  * we have a valid buffer
+  * strip the newline and tokenize it
+  */
+ len = strlen( buf );
+ if( buf[len] == '\n' ){
+   buf[len] = '\0';
+ }
+
+ if( buf[0] == '#' ){
+   // not a valid trace
+   return -1;
+ }
+
+ /* tokenize it */
+ token = strtok( buf, ":");
+ strcpy(trace->op, token);
+
+ /* num_bytes */
+ token = strtok( NULL, ":");
+ trace->num_bytes = (int)(atoi(token));
+
+ /* procid */
+ token = strtok( NULL, ":");
+ trace->procid = (int)(atoi(token));
+
+ /* first part of address = 0x */
+ token = strtok( NULL, "x");
+ /* last part of address in hex */
+ token = strtok( NULL, " ");
+ trace->addr = (uint64_t)(strtol( token, NULL, 16 ));
+
+ return 0;
+}
+
+static int mapVirtualAddr(uint64_t virtualAddr,
+                         uint32_t entries,
+                         struct pageTableNode *pageTable,
+                         uint64_t *physicalAddr)
 {
   /* vars */
-  int i;
-  int j;
+  int i, j, k, ms;
+  int upMoves;
+  int start;
+  int prevHit;
+  int currHit;
 
   /* PAGE TABLE */
-  int64_t virtualPage = virtualAddr / pageSize;
-  int64_t offset = virtualAddr % pageSize;
+  int64_t virtualPage = (int64_t)((virtualAddr & VIRTUAL_PAGE_MASK)
+                                   >> VIRTUAL_PAGE_SHIFT);
+  int64_t offset = (int64_t)(virtualAddr & VIRTUAL_OFFSET_MASK);
   int64_t pageFrame = -1;
 
   /* check for end of table, unallocated entry or matched entry in table */
@@ -103,19 +116,83 @@
     i++;
   }
 
+  /* In case of end of the table, replace either LRU or FIFO entry */
   if（ i>= entries )
   {
-    pageFrame = pageTable[0].pageFrame; // previous reference to pageFrame
+    pageFrame = pageTable[0].pageFrame;               // previous reference to pageFrame
     for( j = 0; j < entries - 1; j++ )
     {
-      pageTable[j] = pageTable[j + 1];  // shift all entries up
+      pageTable[j] = pageTable[j + 1];                // shift all entries up
     }
     pageTable[entries - 1].virtualPage = virtualPage; // last entry will be the new VP
     pageTable[entries - 1].pageFrame = pageFrame;     // last entry's PF will be the previous PF
+    pageTable[entries - 1].hit = 0;                   // set the last entry's counter
 
-    pageTable[entries - 1].hit = 0;
+    k = 1;
+    /* while the current's hit count is < the previous hit count */
+    while( pageTable[entries - 1].hit < pageTable[entries - 1 - k].hit)
+    {
+      k++;
+    }
+    upMoves = k -1;                            // number of moves is off by 1
+    start = entries - 1;                       // Variable for starting position for page table
+    for( m = 0; m < upMoves; m++, start--)
+    {
+      pageTable[start] = pageTable[start - 1]; // Move each entry to the one above
+    }
+    pageTable[entries - 1 - upMoves].virtualPage = virtualPage;
+    pageTable[entries - 1 - upMoves].pageFrame = pageFrame;
+    pageTable[entries - 1 - upMoves].hit = 0;
   }
+  /* In case of unallocated entry, set entry according to virtual page and page frame */
+  else if( pageTable[i].virtualPage == -1 )
+  {
+    pageTable[i].virtualPage = virtualPage;    // set current index to new VP
+    pageTable[i].pageFrame = i;                // set current PF to index because index = PF
+    prevHit = pageTable[i].hit;                // previous reference to number of hits
 
+    j = 1;
+    /* while the index is a valid index and the current hit count is less than the previous*/
+    while( !((i - j) <= -1) && pageTable[i].hit < pageTable[i - j].hit )
+    {
+      j++;
+    }
+    upMoves = j - 1;
+    k = i;
+    start = 0;
+    for( start = 0; start < upMoves; start++, k--)
+    {
+      pageTable[k] = pageTable[k - 1];                  // move each entry to the one above
+    }
+    pageTable[i - upMoves].virtualPage = virtualPage;   // update the VP at the new location
+    pageTable[i - upMoves].pageFrame = i;               // update the PF to the new location
+    pageTable[i - upMoves].hit = prevHit;               // update the hit count to the previous hit
+  }
+  /* In case of hit in page table, calculate physical address, update page table */
+  else
+  {
+    pageFrame = pageTable[i].pageFrame;
+    &physicalAddr = (uint64_t)((pageFrame << VIRTUAL_PAGE_SHIFT) | offset);
+
+    /* LFU policy*/
+    pageTable[i].hit += 1;
+    currHit = pageTable[i].hit;
+
+    k = i;
+    /* while a valid entry and the current hit count is greater than the next, swap them */
+    while( (k < entries - 1) && (pageTable[i].hit >= pageTable[k + 1].hit) )
+    {
+      if( pageTable[k + 1].virtualPage == -1 )    // check to see if there is an entry or not
+      {
+        break;
+      }
+      pageTable[k] = pageTable[k + 1];            // current reference will be the next reference
+      pageTable[k + 1].virtualPage = virtualPage; // next reference's VP will be the current VP
+      pageTable[k + 1].pageFrame = pageFrame;     // next reference's PF will be the current PF
+      pageTable[k + 1].hit = currHit;             // next reference's hit will be the current hit
+      k ++;                                       // keep going until the end of the table or an empty entry
+    }
+  }
   return 0;
 }
 
@@ -237,6 +314,7 @@ int main(int argc, char* argv[])
      }
   }
 
+  free(pageTable);
   fclose(infile);
   fclose(outfile);
 
