@@ -16,9 +16,9 @@
  /* ---------------------------------------------- DATA STRUCTURE*/
  typedef struct
  {
-   uint64_t virtualPage;
-   uint64_t pageFrame;
-   uint64_t hit;
+   int64_t virtualPage;
+   int64_t pageFrame;
+   int64_t hit;
  }pageTableNode;
 
  typedef struct
@@ -39,7 +39,7 @@
 
    /* read a single entry from the trace file */
    if( feof(infile) ){
-     return 2;
+     return -2;
    }
    if( fgets( buf, 50, infile ) == NULL ){
      return -1;
@@ -88,15 +88,16 @@
 {
   /* vars */
   int i;
+  int j;
 
   /* PAGE TABLE */
-  uint64_t virtualPage = virtualAddr / pageSize;
-  uint64_t offset = virtualAddr % pageSize;
+  int64_t virtualPage = virtualAddr / pageSize;
+  int64_t offset = virtualAddr % pageSize;
   int64_t pageFrame = -1;
 
   /* check for end of table, unallocated entry or matched entry in table */
   i = 0;
-  while( (i < entries) && (pageTable[i].virtualPage != 0) &&
+  while( (i < entries) && (pageTable[i].virtualPage != -1) &&
          (pageTable[i].virtualPage != virtualPage) )
   {
     i++;
@@ -104,7 +105,15 @@
 
   if（ i>= entries )
   {
-    pageFrame = pageTable[0].pageFrame;
+    pageFrame = pageTable[0].pageFrame; // previous reference to pageFrame
+    for( j = 0; j < entries - 1; j++ )
+    {
+      pageTable[j] = pageTable[j + 1];  // shift all entries up
+    }
+    pageTable[entries - 1].virtualPage = virtualPage; // last entry will be the new VP
+    pageTable[entries - 1].pageFrame = pageFrame;     // last entry's PF will be the previous PF
+
+    pageTable[entries - 1].hit = 0;
   }
 
   return 0;
@@ -198,7 +207,7 @@ int main(int argc, char* argv[])
 
   for( i = 0; i < entries; i++)
   {
-    pageTable[i].virtualPage = 0;
+    pageTable[i].virtualPage = -1;
     pageTable[i].hit = 0;
   }
 
@@ -220,12 +229,12 @@ int main(int argc, char* argv[])
        /* write trace */
      }
 
-     /* read next request from the input file */
-     // done = read_trace( infile, &trace );
-     // while( done == 2 ){
-     //   done = read_trace( infile, &trace);
-     // }
-
+     /* read next request from the input file until to the end of file*/
+     done = read_trace( infile, &trace );
+     while( done != 0 ){
+       done = read_trace( infile, &trace);
+       if( done == -2) break;
+     }
   }
 
   fclose(infile);
