@@ -3,7 +3,7 @@
  *
  * FUNCTION TO TRANSLATE VIRTUAL MEMORY ADDRESSES TO PHYSICAL MEMORY ADDRESSES
  *
- * LFU function refers to https://github.com/ktno43/Virtual-Memory-Addressing/blob/master/Source.c
+ * mapVirtualAddr function refers to https://github.com/ktno43/Virtual-Memory-Addressing/blob/master/Source.c
  *
  */
 
@@ -20,7 +20,7 @@
 /* Masks for Virtual address */
 #define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
 #define VIRTUAL_OFFSET_MASK 0x0000000000000FFF
-#define VIRTUAL_PAGE_SHIFT 8
+#define VIRTUAL_PAGE_SHIFT 12
 
 
 /* ---------------------------------------------- DATA STRUCTURE*/
@@ -55,6 +55,11 @@ static int read_trace( FILE *infile, struct traceNode *trace)
    return -1;
  }
 
+ if( buf[0] == '#' ){
+   // not a valid trace
+   return -1;
+ }
+
  /*
   * we have a valid buffer
   * strip the newline and tokenize it
@@ -62,11 +67,6 @@ static int read_trace( FILE *infile, struct traceNode *trace)
  len = strlen( buf );
  if( buf[len] == '\n' ){
    buf[len] = '\0';
- }
-
- if( buf[0] == '#' ){
-   // not a valid trace
-   return -1;
  }
 
  /* tokenize it */
@@ -90,10 +90,19 @@ static int read_trace( FILE *infile, struct traceNode *trace)
  return 0;
 }
 
+static void write_to_file(FILE* fp,
+                          char* op,
+                          int num_bytes,
+                          int procid,
+                          uint64_t addr)
+{
+  fprintf(fp, "%s:%d:%d:0x%016"PRIX64"\n", op, num_bytes, procid, addr);
+}
+
 static int mapVirtualAddr(uint64_t virtualAddr,
-                         uint32_t entries,
-                         struct pageTableNode *pageTable,
-                         uint64_t *physicalAddr)
+                          uint32_t entries,
+                          struct pageTableNode *pageTable,
+                          uint64_t *physicalAddr)
 {
   /* vars */
   int i, j, k, ms;
@@ -116,7 +125,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
     i++;
   }
 
-  /* In case of end of the table, replace either LRU or FIFO entry */
+  /* In case of end of the table, replace entry */
   if（ i>= entries )
   {
     pageFrame = pageTable[0].pageFrame;               // previous reference to pageFrame
@@ -223,7 +232,6 @@ int main(int argc, char* argv[])
   FILE *outfile = NULL;   // save trace file
   traceNode trace;
   uint64_t virtualAddr;
-  uint64_t offset;
   uint64_t physicalAddr;
 
   while( (ret = getopt( argc, argv, "c:f:h")) != -1 )
@@ -296,16 +304,12 @@ int main(int argc, char* argv[])
 
   /* read all traces until to the end of file */
   while( done == 0 ){
-    /*
-     * translate virtual memory address to physical memory address
-     *
-     */
-     ret = mapVirtualAddr(virtualAddr, pageSize,
-                          entries, pageTable, &physicalAddr);
+     /* translate virtual memory address to physical memory address */
+     ret = mapVirtualAddr(trace.addr, entries, pageTable, &physicalAddr);
      if ( ret == 0 ){
-       /* write trace */
+       /*write trace*/
+       write_to_file(outfile, trace.op, trace.num_bytes, trace.procid, physicalAddr);
      }
-
      /* read next request from the input file until to the end of file*/
      done = read_trace( infile, &trace );
      while( done != 0 ){
