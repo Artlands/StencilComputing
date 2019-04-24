@@ -10,12 +10,15 @@
 /* Included files*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <inttypes.h>
 
 #define DEBUG
 
 /* Physical Memory Parameters */
-#define 4K_PAGESIZE 4096
-#define 1_GB 1073741824
+#define PAGESIZE 4096
+#define GB 1073741824
 
 /* Masks for Virtual address */
 #define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
@@ -24,20 +27,20 @@
 
 
 /* ---------------------------------------------- DATA STRUCTURE*/
-typedef struct
+struct pageTableNode
 {
  int64_t virtualPage;
  int64_t pageFrame;
  int64_t hit;
-}pageTableNode;
+};
 
-typedef struct
+struct traceNode
 {
  char op[10];
  int num_bytes;
  int procid;
  uint64_t addr;
-}traceNode;
+};
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 static int read_trace( FILE *infile, struct traceNode *trace)
@@ -105,7 +108,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
                           uint64_t *physicalAddr)
 {
   /* vars */
-  int i, j, k, ms;
+  int i, j, k, m;
   int upMoves;
   int start;
   int prevHit;
@@ -126,7 +129,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
   }
 
   /* In case of end of the table, replace entry */
-  if（ i>= entries )
+  if( i >= entries )
   {
     pageFrame = pageTable[0].pageFrame;               // previous reference to pageFrame
     for( j = 0; j < entries - 1; j++ )
@@ -181,7 +184,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
   else
   {
     pageFrame = pageTable[i].pageFrame;
-    &physicalAddr = (uint64_t)((pageFrame << VIRTUAL_PAGE_SHIFT) | offset);
+    *physicalAddr = (uint64_t)((pageFrame << VIRTUAL_PAGE_SHIFT) | offset);
 
     /* LFU policy*/
     pageTable[i].hit += 1;
@@ -221,16 +224,16 @@ int main(int argc, char* argv[])
   /* PAGE TABLE*/
   uint32_t capacity = 0;            // HMC capacity
   uint32_t memSize = 0;             // Main memory size
-  uint32_t pageSize = 4K_PAGESIZE;  // page size
+  uint32_t pageSize = PAGESIZE;     // page size
   uint32_t entries = 0;             // number of entries
-  pageTableNode *pageTable = NULL;  // page table
+  struct pageTableNode *pageTable = NULL;  // page table
 
   /* MEMORY TRACE*/
   char infilename[1024];
   char outfilename[1024];
   FILE *infile = NULL;    // read trace file
   FILE *outfile = NULL;   // save trace file
-  traceNode trace;
+  struct traceNode trace;
   uint64_t virtualAddr;
   uint64_t physicalAddr;
 
@@ -280,9 +283,9 @@ int main(int argc, char* argv[])
   /* ---- End Sanity Check ---- */
 
   /* Initialization */
-  memSize = capacity * 1_GB;
+  memSize = capacity * GB;
   entries = memSize / pageSize;
-  pageTable = (pageTableNode *)malloc(entries * sizeof(pageTableNode));
+  pageTable = (struct pageTableNode *)malloc(entries * sizeof(struct pageTableNode));
 
   if( pageTable == NULL )
   {
