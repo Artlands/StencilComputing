@@ -385,7 +385,7 @@ int main(int argc, char* argv[])
   offset = (uint64_t)(stor_size * (cntr_size + 1));
 
   /* Manually select the start address, it can be any arbitrary address */
-  base_a = 0x0000004F72CE2091;
+  base_a = 0x30C0A94F72CE2090;
   base_b = base_a + offset;
 
   printf("%s\n", "Allocating memory space... ");
@@ -541,8 +541,8 @@ int main(int argc, char* argv[])
     }
 
     // Write Stencil information
-    write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-                    cntr_size, sten_order, sten_coeff, data_type);
+    // write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
+    //                 cntr_size, sten_order, sten_coeff, data_type);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )

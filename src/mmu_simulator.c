@@ -58,19 +58,20 @@ static int read_trace( FILE *infile, struct traceNode *trace)
    return -1;
  }
 
- if( buf[0] == '#' ){
-   // not a valid trace
-   return -1;
- }
-
  /*
   * we have a valid buffer
   * strip the newline and tokenize it
   */
+
  len = strlen( buf );
  if( buf[len] == '\n' ){
    buf[len] = '\0';
  }
+
+ // if( buf[0] == '#' ){
+ //   // not a valid trace
+ //   return -1;
+ // }
 
  /* tokenize it */
  token = strtok( buf, ":");
@@ -119,6 +120,11 @@ static int mapVirtualAddr(uint64_t virtualAddr,
                                    >> VIRTUAL_PAGE_SHIFT);
   int64_t offset = (int64_t)(virtualAddr & VIRTUAL_OFFSET_MASK);
   int64_t pageFrame = -1;
+
+#ifdef DEBUG
+  printf("Virtual page:%"PRIX64"\n", virtualPage);
+  printf("Offset:%"PRIX64"\n", offset);
+#endif
 
   /* check for end of table, unallocated entry or matched entry in table */
   i = 0;
@@ -299,6 +305,7 @@ int main(int argc, char* argv[])
     pageTable[i].hit = 0;
   }
 
+  printf("Reading memory traces...\n");
   /* read first request from the input file */
   done = read_trace( infile, &trace );
   while( done != 0 ){
@@ -308,7 +315,14 @@ int main(int argc, char* argv[])
   /* read all traces until to the end of file */
   while( done == 0 ){
      /* translate virtual memory address to physical memory address */
+#ifdef DEBUG
+     printf("Operation: %s\n", trace.op );
+     printf("Num of bytes: %d\n", trace.num_bytes );
+     printf("Process ID: %d\n", trace.procid );
+     printf("Address: 0x%016"PRIX64"\n", trace.addr );
+#endif
      ret = mapVirtualAddr(trace.addr, entries, pageTable, &physicalAddr);
+
      if ( ret == 0 ){
        /*write trace*/
        write_to_file(outfile, trace.op, trace.num_bytes, trace.procid, physicalAddr);
