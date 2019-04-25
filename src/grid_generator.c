@@ -649,8 +649,8 @@ int main(int argc, char* argv[])
     }
 
     // Write Stencil information
-    write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-                    cntr_size, sten_order, sten_coeff, data_type);
+    // write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
+    //                 cntr_size, sten_order, sten_coeff, data_type);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
@@ -736,8 +736,8 @@ int main(int argc, char* argv[])
     }
 
     // Write Stencil information
-    write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-                    cntr_size, sten_order, sten_coeff, data_type);
+    // write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
+    //                 cntr_size, sten_order, sten_coeff, data_type);
 
     switch(dim)
     {

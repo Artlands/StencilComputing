@@ -24,5 +24,8 @@ mmu_simulator: $(SRC)/mmu_simulator.o
 clean:
 	rm -Rf ./src/*.o
 
-cleantrace:
+cleanphy:
+	rm -Rf ./traces/*.outphy
+
+cleanvir:
 	rm -Rf ./traces/*.out

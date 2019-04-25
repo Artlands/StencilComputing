@@ -14,7 +14,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#define DEBUG
+// #define DEBUG
 
 /* Physical Memory Parameters */
 #define PAGESIZE 4096
@@ -104,7 +104,8 @@ static void write_to_file(FILE* fp,
 }
 
 static int mapVirtualAddr(uint64_t virtualAddr,
-                          uint32_t entries,
+                          uint64_t entries,
+                          uint64_t pageSize,
                           struct pageTableNode *pageTable,
                           uint64_t *physicalAddr)
 {
@@ -124,6 +125,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
 #ifdef DEBUG
   printf("Virtual page:%"PRIX64"\n", virtualPage);
   printf("Offset:%"PRIX64"\n", offset);
+  printf("PageTable VP:%"PRIX64"\n", pageTable[0].virtualPage);
 #endif
 
   /* check for end of table, unallocated entry or matched entry in table */
@@ -161,6 +163,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
     pageTable[entries - 1 - upMoves].virtualPage = virtualPage;
     pageTable[entries - 1 - upMoves].pageFrame = pageFrame;
     pageTable[entries - 1 - upMoves].hit = 0;
+    printf("\nPage fault!\n");
   }
   /* In case of unallocated entry, set entry according to virtual page and page frame */
   else if( pageTable[i].virtualPage == -1 )
@@ -185,6 +188,7 @@ static int mapVirtualAddr(uint64_t virtualAddr,
     pageTable[i - upMoves].virtualPage = virtualPage;   // update the VP at the new location
     pageTable[i - upMoves].pageFrame = i;               // update the PF to the new location
     pageTable[i - upMoves].hit = prevHit;               // update the hit count to the previous hit
+    printf("\nPage fault!\n");
   }
   /* In case of hit in page table, calculate physical address, update page table */
   else
@@ -228,10 +232,10 @@ int main(int argc, char* argv[])
   int done = 0;
 
   /* PAGE TABLE*/
-  uint32_t capacity = 0;            // HMC capacity
-  uint32_t memSize = 0;             // Main memory size
-  uint32_t pageSize = PAGESIZE;     // page size
-  uint32_t entries = 0;             // number of entries
+  uint64_t capacity = 0;            // HMC capacity
+  uint64_t memSize = 0;             // Main memory size
+  uint64_t pageSize = PAGESIZE;     // page size
+  uint64_t entries = 0;             // number of entries
   struct pageTableNode *pageTable = NULL;  // page table
 
   /* MEMORY TRACE*/
@@ -289,8 +293,15 @@ int main(int argc, char* argv[])
   /* ---- End Sanity Check ---- */
 
   /* Initialization */
-  memSize = capacity * GB;
+  memSize = (uint64_t)(capacity * GB);
   entries = memSize / pageSize;
+
+#ifdef DEBUG
+  printf("Page size: %llu\n", pageSize );
+  printf("Memory size: %llu\n", memSize );
+  printf("Entries: %llu\n", entries);
+#endif
+
   pageTable = (struct pageTableNode *)malloc(entries * sizeof(struct pageTableNode));
 
   if( pageTable == NULL )
@@ -321,7 +332,7 @@ int main(int argc, char* argv[])
      printf("Process ID: %d\n", trace.procid );
      printf("Address: 0x%016"PRIX64"\n", trace.addr );
 #endif
-     ret = mapVirtualAddr(trace.addr, entries, pageTable, &physicalAddr);
+     ret = mapVirtualAddr(trace.addr, entries, pageSize, pageTable, &physicalAddr);
 
      if ( ret == 0 ){
        /*write trace*/
