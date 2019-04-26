@@ -153,8 +153,10 @@ static int mapVirtualaddr(uint64_t virtual_addr,
       if( page_table[i].page_frame == page_frame )
       {
         found = 1;
+        page_table[i].virtual_page = virtual_page;
         page_table[i].age = 0;
-        *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
+        page_table[i].isValid = 1;
+        *physicalAddr = (uint64_t)((page_frame << VIRTUAL_PAGE_SHIFT) | offset);
       }
       else
       {
@@ -175,8 +177,8 @@ static int mapVirtualaddr(uint64_t virtual_addr,
         page_table[nextEntryIndex].page_frame = page_frame;
         page_table[nextEntryIndex].age = 0;
         page_table[nextEntryIndex].isValid = 1;
+        *physicalAddr = (uint64_t)((page_frame << VIRTUAL_PAGE_SHIFT) | offset);
         nextEntryIndex ++;
-        *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
       }
       else
       {
@@ -185,7 +187,7 @@ static int mapVirtualaddr(uint64_t virtual_addr,
         page_table[indexOfOldest].age = 0;
         page_table[indexOfOldest].isValid = 1;
         nextEntryIndex = 0;
-        *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
+        *physicalAddr = (uint64_t)((page_frame << VIRTUAL_PAGE_SHIFT) | offset);
       }
     }
   }
