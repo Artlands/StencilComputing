@@ -121,6 +121,7 @@ static int mapVirtualaddr(uint64_t virtual_addr,
   uint64_t oldestAge = 0;
   uint64_t indexOfOldest = 0;
   uint64_t nextEntryIndex = 0;
+  *pta_miss = 0;
 
   /* Get virtual page and offset */
   int64_t virtual_page = (int64_t)((virtual_addr & VIRTUAL_PAGE_MASK)
