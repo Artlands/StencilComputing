@@ -3,7 +3,9 @@
  *
  * FUNCTION TO TRANSLATE VIRTUAL MEMORY ADDRESSES TO PHYSICAL MEMORY ADDRESSES
  *
- * mapVirtualAddr function refers to https://github.com/ktno43/Virtual-Memory-Addressing/blob/master/Source.c
+ * Search the TLB, if a TLB hit occurs, return the frame number else go to the page table
+ * mapVirtualaddr function refers to https://github.com/Oakes6/VirtualMemorySimulator
+ * /tree/d9826d50530630ec8e1686308a3794eae93e8fc3
  *
  */
 
@@ -27,23 +29,25 @@
 
 
 /* ---------------------------------------------- DATA STRUCTURE*/
-struct pageTableNode
-{
- int64_t virtualPage;
- int64_t pageFrame;
- int64_t hit;
-};
 
-struct traceNode
+typedef struct pta_node
+{
+  int64_t virtual_page;
+  int64_t page_frame;
+  int64_t age;
+  int isValid;
+}pta_node;
+
+typedef struct trace_node
 {
  char op[10];
  int num_bytes;
  int procid;
  uint64_t addr;
-};
+}trace_node;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
-static int read_trace( FILE *infile, struct traceNode *trace)
+static int read_trace( FILE *infile, trace_node *trace)
 {
  /* vars */
  char buf[50];
@@ -103,121 +107,90 @@ static void write_to_file(FILE* fp,
   fprintf(fp, "%s:%d:%d:0x%016"PRIX64"\n", op, num_bytes, procid, addr);
 }
 
-static int mapVirtualAddr(uint64_t virtualAddr,
+static int mapVirtualaddr(uint64_t virtual_addr,
                           uint64_t entries,
-                          uint64_t pageSize,
-                          struct pageTableNode *pageTable,
-                          uint64_t *physicalAddr)
+                          uint64_t page_size,
+                          uint64_t *pta_miss,
+                          pta_node *page_table,
+                          uint64_t *physical_addr)
 {
   /* vars */
-  int i, j, k, m;
-  int upMoves;
-  int start;
-  int prevHit;
-  int currHit;
+  int i = 0;
+  int hitFlag = 0;
+  int found = 0;
+  uint64_t oldestAge = 0;
+  uint64_t indexOfOldest = 0;
+  uint64_t nextEntryIndex = 0;
 
-  /* PAGE TABLE */
-  int64_t virtualPage = (int64_t)((virtualAddr & VIRTUAL_PAGE_MASK)
+  /* Get virtual page and offset */
+  int64_t virtual_page = (int64_t)((virtual_addr & VIRTUAL_PAGE_MASK)
                                    >> VIRTUAL_PAGE_SHIFT);
-  int64_t offset = (int64_t)(virtualAddr & VIRTUAL_OFFSET_MASK);
-  int64_t pageFrame = -1;
+  int64_t offset = (int64_t)(virtual_addr & VIRTUAL_OFFSET_MASK);
 
 #ifdef DEBUG
-  printf("Virtual page:%"PRIX64"\n", virtualPage);
+  printf("Virtual page:%"PRIX64"\n", virtual_page);
   printf("Offset:%"PRIX64"\n", offset);
-  printf("PageTable VP:%"PRIX64"\n", pageTable[0].virtualPage);
 #endif
 
-  /* check for end of table, unallocated entry or matched entry in table */
-  i = 0;
-  while( (i < entries) && (pageTable[i].virtualPage != -1) &&
-         (pageTable[i].virtualPage != virtualPage) )
+  /* Search the Page table */
+  for ( i = 0; i < entries; i++ )
   {
-    i++;
+    // Page table hit
+    if( (page_table[i].virtual_page == virtual_page) && page_table[i].isValid )
+    {
+      *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
+      hitFlag = 1;
+    }
   }
-
-  /* In case of end of the table, replace entry */
-  if( i >= entries )
+  /* Page table miss*/
+  if( hitFlag == 0)
   {
-    pageFrame = pageTable[0].pageFrame;               // previous reference to pageFrame
-    for( j = 0; j < entries - 1; j++ )
+    *pta_miss ++;
+    /* LRU */
+    // find oldest entry
+    for( i = 0; i < nextEntryIndex; i++ )
     {
-      pageTable[j] = pageTable[j + 1];                // shift all entries up
-    }
-    pageTable[entries - 1].virtualPage = virtualPage; // last entry will be the new VP
-    pageTable[entries - 1].pageFrame = pageFrame;     // last entry's PF will be the previous PF
-    pageTable[entries - 1].hit = 0;                   // set the last entry's counter
-
-    k = 1;
-    /* while the current's hit count is < the previous hit count */
-    while( pageTable[entries - 1].hit < pageTable[entries - 1 - k].hit)
-    {
-      k++;
-    }
-    upMoves = k -1;                            // number of moves is off by 1
-    start = entries - 1;                       // Variable for starting position for page table
-    for( m = 0; m < upMoves; m++, start--)
-    {
-      pageTable[start] = pageTable[start - 1]; // Move each entry to the one above
-    }
-    pageTable[entries - 1 - upMoves].virtualPage = virtualPage;
-    pageTable[entries - 1 - upMoves].pageFrame = pageFrame;
-    pageTable[entries - 1 - upMoves].hit = 0;
-    printf("\nPage fault!\n");
-  }
-  /* In case of unallocated entry, set entry according to virtual page and page frame */
-  else if( pageTable[i].virtualPage == -1 )
-  {
-    pageTable[i].virtualPage = virtualPage;    // set current index to new VP
-    pageTable[i].pageFrame = i;                // set current PF to index because index = PF
-    prevHit = pageTable[i].hit;                // previous reference to number of hits
-
-    j = 1;
-    /* while the index is a valid index and the current hit count is less than the previous*/
-    while( !((i - j) <= -1) && pageTable[i].hit < pageTable[i - j].hit )
-    {
-      j++;
-    }
-    upMoves = j - 1;
-    k = i;
-    start = 0;
-    for( start = 0; start < upMoves; start++, k--)
-    {
-      pageTable[k] = pageTable[k - 1];                  // move each entry to the one above
-    }
-    pageTable[i - upMoves].virtualPage = virtualPage;   // update the VP at the new location
-    pageTable[i - upMoves].pageFrame = i;               // update the PF to the new location
-    pageTable[i - upMoves].hit = prevHit;               // update the hit count to the previous hit
-    printf("\nPage fault!\n");
-  }
-  /* In case of hit in page table, calculate physical address, update page table */
-  else
-  {
-    pageFrame = pageTable[i].pageFrame;
-    *physicalAddr = (uint64_t)((pageFrame << VIRTUAL_PAGE_SHIFT) | offset);
-
-    /* LFU policy*/
-    pageTable[i].hit += 1;
-    currHit = pageTable[i].hit;
-
-    k = i;
-    /* while a valid entry and the current hit count is greater than the next, swap them */
-    while( (k < entries - 1) && (pageTable[i].hit >= pageTable[k + 1].hit) )
-    {
-      if( pageTable[k + 1].virtualPage == -1 )    // check to see if there is an entry or not
+      if( page_table[i].page_frame == page_frame )
       {
-        break;
+        found = 1;
+        page_table[i].age = 0;
+        *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
       }
-      pageTable[k] = pageTable[k + 1];            // current reference will be the next reference
-      pageTable[k + 1].virtualPage = virtualPage; // next reference's VP will be the current VP
-      pageTable[k + 1].pageFrame = pageFrame;     // next reference's PF will be the current PF
-      pageTable[k + 1].hit = currHit;             // next reference's hit will be the current hit
-      k ++;                                       // keep going until the end of the table or an empty entry
+      else
+      {
+        page_table[i].age ++;
+        if( page_table[i].age > oldestAge )
+        {
+          oldestAge = page_table[i].age;
+          indexOfOldest = i;
+        }
+      }
+    }
+    // oldest entry not found, either replace the oldest entry or insert a new one
+    if( found == 0)
+    {
+      if( nextEntryIndex <= entries )
+      {
+        page_table[nextEntryIndex].virtual_page = virtual_page;
+        page_table[nextEntryIndex].page_frame = page_frame;
+        page_table[nextEntryIndex].age = 0;
+        page_table[nextEntryIndex].isValid = 1;
+        nextEntryIndex ++;
+        *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
+      }
+      else
+      {
+        page_table[indexOfOldest].virtual_page = virtual_page;
+        page_table[indexOfOldest].page_frame = page_frame;
+        page_table[indexOfOldest].age = 0;
+        page_table[indexOfOldest].isValid = 1;
+        nextEntryIndex = 0;
+        *physicalAddr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
+      }
     }
   }
   return 0;
 }
-
 
 /*
  * Main Function, Takes command line arguments, read virtual memory address
@@ -232,20 +205,21 @@ int main(int argc, char* argv[])
   int done = 0;
 
   /* PAGE TABLE*/
-  uint64_t capacity = 0;            // HMC capacity
-  uint64_t memSize = 0;             // Main memory size
-  uint64_t pageSize = PAGESIZE;     // page size
-  uint64_t entries = 0;             // number of entries
-  struct pageTableNode *pageTable = NULL;  // page table
+  uint64_t capacity = 0;               // HMC capacity
+  uint64_t memSize = 0;                // Main memory size
+  uint64_t page_size = PAGESIZE;       // page size
+  uint64_t entries = 0;                // number of entries
+  uint64_t pta_miss = 0;
+  pta_node *page_table = NULL;          // page table
 
   /* MEMORY TRACE*/
   char infilename[1024];
   char outfilename[1024];
   FILE *infile = NULL;    // read trace file
   FILE *outfile = NULL;   // save trace file
-  struct traceNode trace;
-  uint64_t virtualAddr;
-  uint64_t physicalAddr;
+  trace_node trace;
+  uint64_t virtual_addr = 0x00ull;
+  uint64_t physical_addr = 0x00ull;
 
   while( (ret = getopt( argc, argv, "c:f:h")) != -1 )
   {
@@ -294,26 +268,27 @@ int main(int argc, char* argv[])
 
   /* Initialization */
   memSize = (uint64_t)(capacity * GB);
-  entries = memSize / pageSize;
+  entries = memSize / page_size;
 
 #ifdef DEBUG
-  printf("Page size: %llu\n", pageSize );
+  printf("Page size: %llu\n", page_size );
   printf("Memory size: %llu\n", memSize );
   printf("Entries: %llu\n", entries);
 #endif
 
-  pageTable = (struct pageTableNode *)malloc(entries * sizeof(struct pageTableNode));
-
-  if( pageTable == NULL )
+  /* Init Page table */
+  page_table = (pta_node *)malloc(entries * sizeof(pta_node));
+  if( page_table == NULL )
   {
     printf("Error: Out of memory\n");
     return -1;
   }
-
-  for( i = 0; i < entries; i++)
+  for( i = 0; i < entries; i++ )
   {
-    pageTable[i].virtualPage = -1;
-    pageTable[i].hit = 0;
+    page_table[i].virtual_page = -1;
+    page_table[i].page_frame = -1;
+    page_table[i].age = 0;
+    page_table[i].isValid = 0;
   }
 
   printf("Reading memory traces...\n");
@@ -332,11 +307,16 @@ int main(int argc, char* argv[])
      printf("Process ID: %d\n", trace.procid );
      printf("Address: 0x%016"PRIX64"\n", trace.addr );
 #endif
-     ret = mapVirtualAddr(trace.addr, entries, pageSize, pageTable, &physicalAddr);
+     ret = mapVirtualaddr(virtual_addr,
+                          entries,
+                          page_size,
+                          &pta_miss,
+                          page_table,
+                          &physical_addr);
 
      if ( ret == 0 ){
        /*write trace*/
-       write_to_file(outfile, trace.op, trace.num_bytes, trace.procid, physicalAddr);
+       write_to_file(outfile, trace.op, trace.num_bytes, trace.procid, physical_addr);
      }
      /* read next request from the input file until to the end of file*/
      done = read_trace( infile, &trace );
@@ -345,8 +325,11 @@ int main(int argc, char* argv[])
        if( done == -2) break;
      }
   }
+#ifdef DEBUG
+     printf("PageTable misses: %llu\n", pta_miss);
+#endif
 
-  free(pageTable);
+  free(page_table);
   fclose(infile);
   fclose(outfile);
 
