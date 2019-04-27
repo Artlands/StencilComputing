@@ -27,6 +27,11 @@
 #define VIRTUAL_OFFSET_MASK 0x0000000000000FFF
 #define VIRTUAL_PAGE_SHIFT 12
 
+/* Global variables*/
+uint64_t pta_miss;
+uint64_t oldestAge;
+uint64_t indexOfOldest;
+uint64_t nextEntryIndex;
 
 /* ---------------------------------------------- DATA STRUCTURE*/
 
@@ -110,18 +115,11 @@ static void write_to_file(FILE* fp,
 static int mapVirtualaddr(uint64_t virtual_addr,
                           uint64_t entries,
                           uint64_t page_size,
-                          uint64_t *pta_miss,
                           pta_node *page_table,
                           uint64_t *physical_addr)
 {
   /* vars */
   int i = 0;
-  int hitFlag = 0;
-  int found = 0;
-  uint64_t oldestAge = 0;
-  uint64_t indexOfOldest = 0;
-  uint64_t nextEntryIndex = 0;
-  *pta_miss = 0;
 
   /* Get virtual page and offset */
   int64_t virtual_page = (int64_t)((virtual_addr & VIRTUAL_PAGE_MASK)
@@ -140,60 +138,54 @@ static int mapVirtualaddr(uint64_t virtual_addr,
     if( (page_table[i].virtual_page == virtual_page) && page_table[i].isValid )
     {
       *physical_addr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
-      hitFlag = 1;
+      return 0;
     }
   }
   /* Page table miss*/
-  if( hitFlag == 0)
+  pta_miss ++;
+  /* LRU */
+  // find oldest entry
+  for( i = 0; i < nextEntryIndex; i++ )
   {
-    *pta_miss ++;
-    /* LRU */
-    // find oldest entry
-    for( i = 0; i < nextEntryIndex; i++ )
+    if( page_table[i].virtual_page == virtual_page )
     {
-      if( page_table[i].virtual_page == virtual_page )
-      {
-        found = 1;
-        page_table[i].age = 0;
-        page_table[i].isValid = 1;
-        *physical_addr = (uint64_t)((page_table[i].page_frame
-                                     << VIRTUAL_PAGE_SHIFT) | offset);
-      }
-      else
-      {
-        page_table[i].age ++;
-        if( page_table[i].age > oldestAge )
-        {
-          oldestAge = page_table[i].age;
-          indexOfOldest = i;
-        }
-      }
+      page_table[i].age = 0;
+      page_table[i].isValid = 1;
+      *physical_addr = (uint64_t)((page_table[i].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset);
+      return 0;
     }
-    // oldest entry not found, either replace the oldest entry or insert a new one
-    if( found == 0)
+    else
     {
-      if( nextEntryIndex <= entries )
+      page_table[i].age ++;
+      if( page_table[i].age > oldestAge )
       {
-        page_table[nextEntryIndex].virtual_page = virtual_page;
-        page_table[nextEntryIndex].age = 0;
-        page_table[nextEntryIndex].isValid = 1;
-        *physical_addr = (uint64_t)((page_table[nextEntryIndex].page_frame
-                                     << VIRTUAL_PAGE_SHIFT) | offset);
-        nextEntryIndex ++;
-      }
-      else
-      {
-        page_table[indexOfOldest].virtual_page = virtual_page;
-        page_table[indexOfOldest].age = 0;
-        page_table[indexOfOldest].isValid = 1;
-        nextEntryIndex = 0;
-        *physical_addr = (uint64_t)((page_table[indexOfOldest].page_frame
-                                     << VIRTUAL_PAGE_SHIFT) | offset);
-        nextEntryIndex = 0;
+        oldestAge = page_table[i].age;
+        indexOfOldest = i;
       }
     }
   }
-  return 0;
+  // oldest entry not found, either replace the oldest entry or insert a new one
+  if( nextEntryIndex <= entries )
+  {
+    page_table[nextEntryIndex].virtual_page = virtual_page;
+    page_table[nextEntryIndex].age = 0;
+    page_table[nextEntryIndex].isValid = 1;
+    *physical_addr = (uint64_t)((page_table[nextEntryIndex].page_frame
+                                 << VIRTUAL_PAGE_SHIFT) | offset);
+    nextEntryIndex ++;
+    return 0;
+  }
+  else
+  {
+    page_table[indexOfOldest].virtual_page = virtual_page;
+    page_table[indexOfOldest].age = 0;
+    page_table[indexOfOldest].isValid = 1;
+    *physical_addr = (uint64_t)((page_table[indexOfOldest].page_frame
+                                 << VIRTUAL_PAGE_SHIFT) | offset);
+    nextEntryIndex = 0;
+    return 0;
+  }
 }
 
 /*
@@ -213,8 +205,11 @@ int main(int argc, char* argv[])
   uint64_t memSize = 0;                // Main memory size
   uint64_t page_size = PAGESIZE;       // page size
   uint64_t entries = 0;                // number of entries
-  uint64_t pta_miss = 0;
   pta_node *page_table = NULL;          // page table
+  pta_miss = 0;
+  oldestAge = 0;
+  indexOfOldest = 0;
+  nextEntryIndex = 0;
 
   /* MEMORY TRACE*/
   char infilename[1024];
@@ -311,10 +306,9 @@ int main(int argc, char* argv[])
      printf("Process ID: %d\n", trace.procid );
      printf("Address: 0x%016"PRIX64"\n", trace.addr );
 #endif
-     ret = mapVirtualaddr(virtual_addr,
+     ret = mapVirtualaddr(trace.addr,
                           entries,
                           page_size,
-                          &pta_miss,
                           page_table,
                           &physical_addr);
 
