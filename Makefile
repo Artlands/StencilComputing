@@ -29,3 +29,6 @@ cleanphy:
 
 cleanvir:
 	rm -Rf ./traces/*.out
+
+cleanlog:
+	rm -Rf ./traces/*.log

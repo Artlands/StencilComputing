@@ -26,7 +26,7 @@ extern int getpimsid (int *pimsid,
                      uint32_t num_vaults);
 
 // Write stencil information
-void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
+void write_sten_info(FILE* fp, char* filename, int dim, int dim_x, int dim_y, int dim_z,
                      uint32_t cntr_size, int sten_order, int sten_coeff, char* data_type)
 {
   uint32_t inner = 0;
@@ -45,7 +45,7 @@ void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
     default:
       break;
   }
-  fprintf(fp,"#================================================\n");
+  fprintf(fp,"# Tracefile path:       %s\n", filename);
   fprintf(fp,"# Stencil Dimension:    %u, X: %d, Y: %d, Z: %d\n",
           dim, dim_x, dim_y, dim_z);
   fprintf(fp,"# Stencil Grid Size:    %u\n", cntr_size);
@@ -53,7 +53,7 @@ void write_sten_info(FILE* fp, int dim, int dim_x, int dim_y, int dim_z,
   fprintf(fp,"# Stencil Order:        %d\n", sten_order);
   fprintf(fp,"# Stencil Coefficients: %d\n", sten_coeff);
   fprintf(fp,"# Stencil Data Type:    %s\n", data_type);
-  fprintf(fp,"#================================================\n");
+  fprintf(fp,"#==============================================================================\n");
 }
 
 /*
@@ -110,7 +110,9 @@ int main(int argc, char* argv[])
   uint64_t base_a = 0x00ll;
   uint64_t base_b = 0x00ll;
   FILE *outfile = NULL;     // save trace file
+  FILE *logfile = NULL;     // save trace log
   char filename[1024];
+  char tracelog[2014];
   char ops[10];
   int num_bytes = 1;            // number of bytes for each ops
 
@@ -330,6 +332,14 @@ int main(int argc, char* argv[])
   }
   /* ---- End Sanity Check ---- */
 
+  sprintf(tracelog, "../traces/trace.log");
+
+  logfile = fopen(tracelog, "a");
+  if( logfile == NULL ) {
+    printf("ERROR: Cannot open trace log file\n");
+    return -1;
+  }
+
   printf("%s\n", "Checking HMC capacity... ");
   /*
    * Make sure we have enough HMC capacity
@@ -541,8 +551,9 @@ int main(int argc, char* argv[])
     }
 
     // Write Stencil information
-    // write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-    //                 cntr_size, sten_order, sten_coeff, data_type);
+    write_sten_info(logfile, filename, dim, dim_x, dim_y, dim_z,
+                    cntr_size, sten_order, sten_coeff, data_type);
+    fclose(logfile);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
@@ -649,8 +660,9 @@ int main(int argc, char* argv[])
     }
 
     // Write Stencil information
-    // write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-    //                 cntr_size, sten_order, sten_coeff, data_type);
+    write_sten_info(logfile, filename, dim, dim_x, dim_y, dim_z,
+                    cntr_size, sten_order, sten_coeff, data_type);
+    fclose(logfile);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
@@ -736,8 +748,9 @@ int main(int argc, char* argv[])
     }
 
     // Write Stencil information
-    // write_sten_info(outfile, dim, dim_x, dim_y, dim_z,
-    //                 cntr_size, sten_order, sten_coeff, data_type);
+    write_sten_info(logfile, filename, dim, dim_x, dim_y, dim_z,
+                    cntr_size, sten_order, sten_coeff, data_type);
+    fclose(logfile);
 
     switch(dim)
     {
