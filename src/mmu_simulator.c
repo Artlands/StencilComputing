@@ -3,9 +3,6 @@
  *
  * FUNCTION TO TRANSLATE VIRTUAL MEMORY ADDRESSES TO PHYSICAL MEMORY ADDRESSES
  *
- * Search the TLB, if a TLB hit occurs, return the frame number else go to the page table
- * mapVirtualaddr function refers to https://github.com/Oakes6/VirtualMemorySimulator
- * /tree/d9826d50530630ec8e1686308a3794eae93e8fc3
  *
  */
 
@@ -135,13 +132,13 @@ static int mapVirtualaddr(uint64_t virtual_addr,
    * if nextEntryIndex < entries,
    *    // do not need to consider age
    *    traverse from 0 to nextEntryIndex to find if pagetable hit
-   *    if hit,return result
+   *    if hit,return 
    *    else add new entry, nextEntryIndex++
    * else
         // pagetable is full
    *    traverse from 0 to entries to find if a pagetable hit
-   *    if hit, return result
-   *    else age++, find indexOfOldest, replace it to the new entry
+   *    if hit, return
+   *    else age++, find indexOfOldest, replace it to the new entry, return
    *
    */
 
