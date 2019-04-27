@@ -12,17 +12,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
+#include "pims.h"
 
 // #define DEBUG
-
-/* Physical Memory Parameters */
-#define PAGESIZE 4096
-#define GB 1073741824
-
-/* Masks for Virtual address */
-#define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
-#define VIRTUAL_OFFSET_MASK 0x0000000000000FFF
-#define VIRTUAL_PAGE_SHIFT 12
 
 /* Global variables*/
 uint64_t pta_miss;
@@ -30,24 +22,8 @@ uint64_t oldestAge;
 uint64_t indexOfOldest;
 uint64_t nextEntryIndex;
 
-/* ---------------------------------------------- DATA STRUCTURE*/
-
-typedef struct pta_node
-{
-  int64_t virtual_page;
-  int64_t age;
-}pta_node;
-
-typedef struct trace_node
-{
- char op[10];
- int num_bytes;
- int procid;
- uint64_t addr;
-}trace_node;
-
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
-static int read_trace( FILE *infile, trace_node *trace)
+extern int read_trace( FILE *infile, trace_node *trace)
 {
  /* vars */
  char buf[50];
@@ -132,7 +108,7 @@ static int mapVirtualaddr(uint64_t virtual_addr,
    * if nextEntryIndex < entries,
    *    // do not need to consider age
    *    traverse from 0 to nextEntryIndex to find if pagetable hit
-   *    if hit,return 
+   *    if hit,return
    *    else add new entry, nextEntryIndex++
    * else
         // pagetable is full

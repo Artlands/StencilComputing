@@ -45,7 +45,7 @@ void write_sten_info(FILE* fp, char* filename, int dim, int dim_x, int dim_y, in
     default:
       break;
   }
-  fprintf(fp,"# Tracefile path:       %s\n", filename);
+  fprintf(fp,"# Trace file path:       %s\n", filename);
   fprintf(fp,"# Stencil Dimension:    %u, X: %d, Y: %d, Z: %d\n",
           dim, dim_x, dim_y, dim_z);
   fprintf(fp,"# Stencil Grid Size:    %u\n", cntr_size);

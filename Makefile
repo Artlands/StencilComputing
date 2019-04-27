@@ -7,9 +7,7 @@
 
 CC=gcc
 
-# CFLAGS = -I`pwd`/include -std=c99
-
-CFLAGS = -std=c99
+CFLAGS := -std=c99 -I`pwd`/include/
 
 SRC = ./src
 
