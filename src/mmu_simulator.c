@@ -38,9 +38,7 @@ uint64_t nextEntryIndex;
 typedef struct pta_node
 {
   int64_t virtual_page;
-  int64_t page_frame;
   int64_t age;
-  int isValid;
 }pta_node;
 
 typedef struct trace_node
@@ -131,59 +129,64 @@ static int mapVirtualaddr(uint64_t virtual_addr,
   printf("Offset:%"PRIX64"\n", offset);
 #endif
 
-  /* Search the Page table */
-  for ( i = 0; i < entries; i++ )
+  /* LRU page replacement algorithm
+   *
+   * nextEntryIndex: point to the next available entry
+   * if nextEntryIndex < entries,
+   *    // do not need to consider age
+   *    traverse from 0 to nextEntryIndex to find if pagetable hit
+   *    if hit,return result
+   *    else add new entry, nextEntryIndex++
+   * else
+        // pagetable is full
+   *    traverse from 0 to entries to find if a pagetable hit
+   *    if hit, return result
+   *    else age++, find indexOfOldest, replace it to the new entry
+   *
+   */
+
+  if( nextEntryIndex < entries )
   {
-    // Page table hit
-    if( (page_table[i].virtual_page == virtual_page) && page_table[i].isValid )
+    for( i = 0; i < nextEntryIndex; i++ )
     {
-      *physical_addr = (uint64_t)((page_table[i].page_frame << VIRTUAL_PAGE_SHIFT) | offset);
-      return 0;
-    }
-  }
-  /* Page table miss*/
-  pta_miss ++;
-  /* LRU */
-  // find oldest entry
-  for( i = 0; i < nextEntryIndex; i++ )
-  {
-    if( page_table[i].virtual_page == virtual_page )
-    {
-      page_table[i].age = 0;
-      page_table[i].isValid = 1;
-      *physical_addr = (uint64_t)((page_table[i].page_frame
-                                   << VIRTUAL_PAGE_SHIFT) | offset);
-      return 0;
-    }
-    else
-    {
-      page_table[i].age ++;
-      if( page_table[i].age > oldestAge )
+      // Page table hit
+      if( page_table[i].virtual_page == virtual_page )
       {
-        oldestAge = page_table[i].age;
-        indexOfOldest = i;
+        *physical_addr = (uint64_t)( (i << VIRTUAL_PAGE_SHIFT) | offset );
+        return 0;
       }
     }
-  }
-  // oldest entry not found, either replace the oldest entry or insert a new one
-  if( nextEntryIndex <= entries )
-  {
+    // page table miss, add new entry
+    pta_miss ++;
     page_table[nextEntryIndex].virtual_page = virtual_page;
-    page_table[nextEntryIndex].age = 0;
-    page_table[nextEntryIndex].isValid = 1;
-    *physical_addr = (uint64_t)((page_table[nextEntryIndex].page_frame
-                                 << VIRTUAL_PAGE_SHIFT) | offset);
+    *physical_addr = (uint64_t)( (nextEntryIndex << VIRTUAL_PAGE_SHIFT) | offset);
     nextEntryIndex ++;
     return 0;
   }
   else
   {
+    for( i = 0; i < entries; i++)
+    {
+      // Page table hit
+      if( page_table[i].virtual_page == virtual_page )
+      {
+        *physical_addr = (uint64_t)( (i << VIRTUAL_PAGE_SHIFT) | offset );
+        return 0;
+      }
+      else
+      {
+        page_table[i].age++;
+        if( page_table[i].age > oldestAge )
+        {
+          oldestAge = page_table[i].age;
+          indexOfOldest = i;
+        }
+      }
+    }
+    // page table miss, find indexOfOldest
+    pta_miss ++;
     page_table[indexOfOldest].virtual_page = virtual_page;
-    page_table[indexOfOldest].age = 0;
-    page_table[indexOfOldest].isValid = 1;
-    *physical_addr = (uint64_t)((page_table[indexOfOldest].page_frame
-                                 << VIRTUAL_PAGE_SHIFT) | offset);
-    nextEntryIndex = 0;
+    *physical_addr = (uint64_t)((indexOfOldest << VIRTUAL_PAGE_SHIFT) | offset);
     return 0;
   }
 }
@@ -285,12 +288,9 @@ int main(int argc, char* argv[])
   for( i = 0; i < entries; i++ )
   {
     page_table[i].virtual_page = -1;
-    page_table[i].page_frame = i;
     page_table[i].age = 0;
-    page_table[i].isValid = 0;
   }
 
-  printf("Reading memory traces...\n");
   /* read first request from the input file */
   done = read_trace( infile, &trace );
   while( done != 0 ){
@@ -323,9 +323,8 @@ int main(int argc, char* argv[])
        if( done == -2) break;
      }
   }
-#ifdef DEBUG
-     printf("PageTable misses: %llu\n", pta_miss);
-#endif
+
+  printf("PageTable misses: %llu\n", pta_miss);
 
   free(page_table);
   fclose(infile);
