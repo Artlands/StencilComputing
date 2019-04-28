@@ -23,56 +23,7 @@ uint64_t indexOfOldest;
 uint64_t nextEntryIndex;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
-extern int read_trace( FILE *infile, trace_node *trace)
-{
- /* vars */
- char buf[50];
- char *token;
- size_t len = 0;
-
- /* read a single entry from the trace file */
- if( feof(infile) ){
-   return -2;
- }
- if( fgets( buf, 50, infile ) == NULL ){
-   return -1;
- }
-
- /*
-  * we have a valid buffer
-  * strip the newline and tokenize it
-  */
-
- len = strlen( buf );
- if( buf[len] == '\n' ){
-   buf[len] = '\0';
- }
-
- // if( buf[0] == '#' ){
- //   // not a valid trace
- //   return -1;
- // }
-
- /* tokenize it */
- token = strtok( buf, ":");
- strcpy(trace->op, token);
-
- /* num_bytes */
- token = strtok( NULL, ":");
- trace->num_bytes = (int)(atoi(token));
-
- /* procid */
- token = strtok( NULL, ":");
- trace->procid = (int)(atoi(token));
-
- /* first part of address = 0x */
- token = strtok( NULL, "x");
- /* last part of address in hex */
- token = strtok( NULL, " ");
- trace->addr = (uint64_t)(strtol( token, NULL, 16 ));
-
- return 0;
-}
+extern int read_trace( FILE *infile, trace_node *trace);
 
 static void write_to_file(FILE* fp,
                           char* op,
@@ -181,7 +132,7 @@ int main(int argc, char* argv[])
   uint64_t memSize = 0;                // Main memory size
   uint64_t page_size = PAGESIZE;       // page size
   uint64_t entries = 0;                // number of entries
-  pta_node *page_table = NULL;          // page table
+  pta_node *page_table = NULL;         // page table
   pta_miss = 0;
   oldestAge = 0;
   indexOfOldest = 0;

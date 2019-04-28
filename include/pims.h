@@ -16,7 +16,8 @@
 // #define BLOCK_SIZE 128
 #define BLOCK_SIZE 256
 #define NUM_BLOCKS (CACHE_SIZE/BLOCK_SIZE)
-#define WAY 8
+#define WAYS 8
+#define SETS (NUM_BLOCKS/WAY)
 
 /* Masks for Virtual address */
 #define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
@@ -39,7 +40,7 @@ typedef struct trace_node
  uint64_t addr;
 }trace_node;
 
-typedef struct cache
+typedef struct cache_node
 {
   uint64_t sets;
   uint64_t ways;                 // ways per set
@@ -47,7 +48,7 @@ typedef struct cache
   uint64_t misses;
   double hit_rate;
   double miss_rate;
-} cache;
+} cache_node;
 
 /* Node struct used in construction of BST for plru algorithm implementation */
 typedef struct tree_node

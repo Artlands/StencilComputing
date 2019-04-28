@@ -64,7 +64,10 @@ static uint64_t convert_address(char memory_addr[])
 int main(int argc, char* argv[])
 {
   /* vars */
+  int i = 0;
+  int j = 0;
   int ret = 0;
+  int done = 0;
 
   /* MEMORY TRACE */
   char infilename[1024];
@@ -72,10 +75,12 @@ int main(int argc, char* argv[])
   FILE *infile = NULL;
   FILE *outfile = NULL;
   trace_node trace;
-  uint64_t physical_addr = 0x00ull;
 
   /* cache */
   cache_node current_cache;
+  uint64_t tag_field[SETS][WAYS];
+  unsigned valid_field[SETS][WAYS];
+  tree_node *trees[SETS]            // Array of pointers to bst trees for each set
 
   while( (ret = getopt( argc, argv, "f:h")) != -1 )
   {
@@ -111,7 +116,36 @@ int main(int argc, char* argv[])
   /* ---- End Sanity Check ---- */
 
   /* Init cache */
-  current_cache = {.way = WAY, .sets = NUM_BLOCKS/WAY};
+  current_cache = {.way = WAYS, .sets = SETS};
+  for( i = 0; i < SETS; i++ )
+  {
+    for( j = 0; j < WAYS; j++)
+    {
+      tag_field[i][j] = 0;
+      valid_field[i][j] = 0;
+    }
+  }
+
+  /* Create BST trees */
+
+  /* read first request from the input file */
+  done = read_trace( infile, &trace );
+  while( done != 0 ){
+    done = read_trace( infile, &trace);
+  }
+
+  /* read all traces until to the end of file */
+  while( done == 0 ){
+    /* cache simulation*/
+
+
+    /* read next request from the input file until to the end of file*/
+    done = read_trace( infile, &trace );
+    while( done != 0 ){
+      done = read_trace( infile, &trace);
+      if( done == -2) break;
+    }
+  }
 
   return 0;
 }

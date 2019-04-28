@@ -13,11 +13,11 @@ SRC = ./src
 
 all: grid_generator mmu_simulator
 
-grid_generator: $(SRC)/grid_generator.o $(SRC)/shiftamt.o $(SRC)/pimsid.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/grid_generator.o $(SRC)/shiftamt.o $(SRC)/pimsid.o
+grid_generator: $(SRC)/grid_generator.o $(SRC)/pims_util.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/grid_generator.o $(SRC)/pims_util.o
 
-mmu_simulator: $(SRC)/mmu_simulator.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/mmu_simulator.o
+mmu_simulator: $(SRC)/mmu_simulator.o $(SRC)/pims_util.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/mmu_simulator.o $(SRC)/pims_util.o
 
 clean:
 	rm -Rf ./src/*.o
