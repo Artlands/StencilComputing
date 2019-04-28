@@ -2,8 +2,7 @@
  * _HOST_CASHESIM_C_
  *
  * FUNCTION TO SIMULATE CACHE ON HOST SIDE
- * PLRU reused from Brody's CacheSimulator program and Dr. Chen's cachesim program
- *
+ * PLRU reused from Brody's CacheSimulator program
  */
 
 /* Included files*/
@@ -18,44 +17,11 @@
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int read_trace( FILE *infile, trace_node *trace);
+extern tree_node* create_tree(unsigned number_nodes);
+extern void hit_update_bst(tree_node* root, unsigned total_ways, unsigned target_way);
+extern unsigned find_plru_way(tree_node* root, unsigned total_ways);
+extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
-/* Dr. Chen's function to convert a hex address to the appropriate value */
-static uint64_t convert_address(char memory_addr[])
-{
-    uint64_t binary = 0;
-    int i = 0;
-
-    while (memory_addr[i] != '\n')
-    {
-      if (memory_addr[i] <= '9' && memory_addr[i] >= '0') {
-          binary = (binary*16) + (memory_addr[i] - '0');
-      } else {
-          if(memory_addr[i] == 'a' || memory_addr[i] == 'A') {
-              binary = (binary*16) + 10;
-          }
-          if(memory_addr[i] == 'b' || memory_addr[i] == 'B') {
-              binary = (binary*16) + 11;
-          }
-          if(memory_addr[i] == 'c' || memory_addr[i] == 'C') {
-              binary = (binary*16) + 12;
-          }
-          if(memory_addr[i] == 'd' || memory_addr[i] == 'D') {
-              binary = (binary*16) + 13;
-          }
-          if(memory_addr[i] == 'e' || memory_addr[i] == 'E') {
-              binary = (binary*16) + 14;
-          }
-          if(memory_addr[i] == 'f' || memory_addr[i] == 'F') {
-              binary = (binary*16) + 15;
-          }
-      }
-      i++;
-    }
-#ifdef DEBUG
-    printf("%s converted to %llu\n", memory_addr, binary);
-#endif
-    return binary;
-}
 /*
  * Main Function, Takes command line arguments, read physical memory address
  * traces, simulate 'n-way' cache, generate memory access trace if cache miss
@@ -76,11 +42,18 @@ int main(int argc, char* argv[])
   FILE *outfile = NULL;
   trace_node trace;
 
-  /* cache */
-  cache_node current_cache;
-  uint64_t tag_field[SETS][WAYS];
-  unsigned valid_field[SETS][WAYS];
-  tree_node *trees[SETS]            // Array of pointers to bst trees for each set
+  /* CACHE */
+  CACHE current_cache;
+  uint64_t tag_field[current_cache.sets][current_cache.ways];
+  unsigned valid_field[current_cache.sets][current_cache.ways];
+  tree_node *trees[current_cache.sets];
+
+  /* For each address */
+  uint64_t block_addr;
+  uint64_t index;
+  uint64_t tag;
+  int processed_flag = 0;
+  unsigned replacement;
 
   while( (ret = getopt( argc, argv, "f:h")) != -1 )
   {
@@ -117,16 +90,24 @@ int main(int argc, char* argv[])
 
   /* Init cache */
   current_cache = {.way = WAYS, .sets = SETS};
-  for( i = 0; i < SETS; i++ )
+
+  /* Initialization of arrays*/
+  for(int i=0; i<current_cache.sets; i++)
   {
-    for( j = 0; j < WAYS; j++)
+    for(int j=0; j<current_cache.ways; j++)
     {
-      tag_field[i][j] = 0;
       valid_field[i][j] = 0;
+      tag_field[i][j] = 0;
     }
   }
 
-  /* Create BST trees */
+  /* Calls function to create BST trees for each set in the cache *
+   * using n-1 nodes where n is the number of ways. Sets pointer  *
+   * at appropriate index of tree array                           */
+  for(int i=0; i<current_cache.sets; i++)
+  {
+    trees[i] = create_tree(current_cache.sets-1);
+  }
 
   /* read first request from the input file */
   done = read_trace( infile, &trace );
@@ -136,9 +117,55 @@ int main(int argc, char* argv[])
 
   /* read all traces until to the end of file */
   while( done == 0 ){
-    /* cache simulation*/
+    /* get address infor from input trace */
+    block_addr = (uint64_t)( trace.addr >> (unsigned)log2(BLOCK_SIZE) );
+    index = (uint64_t)( block_addr % current_cache.sets );
+    tag = (uint64_t)( block_addr >> (unsigned)log2(current_cache.sets) );
 
+#ifdef DEBUG
+    printf("Memory address: %llu, Sets: %u, Ways: %u, Block address: %llu, Index: %llu, Tag: %llu ",
+           trace.addr, current_cache->sets, current_cache->ways, block_addr, index, tag);
+#endif
+    /* Flag is set to 1 when address is processed */
+    processed_flag = 0;
 
+    /* check for hit in appropriate set */
+    for( i = 0; i < current_cache.ways; i++ )
+    {
+      /* If cache space is occupied and tag matches then Hit*/
+      if( (valid_field[index][i]) && (tag_field[index][i] == tag) )
+      {
+        current_cache.hits ++;
+        hit_update_bst(trees[index], current_cache.ways, i);
+        processed_flag = 1;
+        break;
+      }
+    }
+    /* If not a hit then process miss */
+    if( processed_flag == 0 )
+    {
+      current_cache.misses ++;
+      /* write this address to output trace file */
+      write_to_file(outfile, trace.op, trace.num_bytes, trace.procid, trace.addr);
+
+      /* First look for an unused way in the proper set */
+      for( i = 0; i < current_cache.ways; i++ )
+      {
+        if( valid_field[index][i] == 0 )
+        {
+          valid_field[index][i] = 1;
+          tag_field[index][i] = tag;
+          processed_flag = 1;
+          break;
+        }
+      }
+      /* If all ways are occupied then traverse bst and replace indicated way*/
+      if( processed_flag == 0 )
+      {
+        replacment = find_plru_way(trees[index], current_cache.ways);
+        tag_field[index][replacement] = tag;
+      }
+    }
     /* read next request from the input file until to the end of file*/
     done = read_trace( infile, &trace );
     while( done != 0 ){
@@ -146,6 +173,11 @@ int main(int argc, char* argv[])
       if( done == -2) break;
     }
   }
+  current_cache->hit_rate = (((double)(current_cache->hits))/((double)(current_cache->hits+current_cache->misses)));
+  current_cache->miss_rate = (((double)(current_cache->misses))/((double)(current_cache->hits+current_cache->misses)));
+
+  fclose(infile);
+  fclose(outfile);
 
   return 0;
 }

@@ -16,7 +16,7 @@
 
 // #define DEBUG
 
-/* Global variables*/
+/* Global variables */
 uint64_t pta_miss;
 uint64_t oldestAge;
 uint64_t indexOfOldest;
@@ -25,14 +25,11 @@ uint64_t nextEntryIndex;
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int read_trace( FILE *infile, trace_node *trace);
 
-static void write_to_file(FILE* fp,
+extern void write_to_file(FILE* fp,
                           char* op,
                           int num_bytes,
                           int procid,
-                          uint64_t addr)
-{
-  fprintf(fp, "%s:%d:%d:0x%016"PRIX64"\n", op, num_bytes, procid, addr);
-}
+                          uint64_t addr);
 
 static int mapVirtualaddr(uint64_t virtual_addr,
                           uint64_t entries,

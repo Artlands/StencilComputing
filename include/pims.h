@@ -40,15 +40,15 @@ typedef struct trace_node
  uint64_t addr;
 }trace_node;
 
-typedef struct cache_node
+typedef struct CACHE
 {
   uint64_t sets;
-  uint64_t ways;                 // ways per set
+  uint64_t ways;
   uint64_t hits;
   uint64_t misses;
   double hit_rate;
   double miss_rate;
-} cache_node;
+} CACHE;
 
 /* Node struct used in construction of BST for plru algorithm implementation */
 typedef struct tree_node
@@ -59,6 +59,14 @@ typedef struct tree_node
  struct tree_node *left_child; // pointer to left child
  struct tree_node *right_child; // pointer to right child
 }tree_node;
+
+/* Queue used in construction of BST. Not really necessary for plru algorithm. Only *
+ * needed to order the tree in the way I wanted to for easy debugging.              */
+typedef struct queue
+{
+  struct tree_node *front;
+  struct tree_node *rear;
+}queue;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int read_trace( FILE *infile, trace_node *trace);
