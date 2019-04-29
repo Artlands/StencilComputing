@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
   int j = 0;
   int k = 0;
   int r = 0;
-  int idx = 0;
+  uint64_t idx = 0;
 
   /* STENCIL GRID FEATURES
    *
@@ -440,7 +440,11 @@ int main(int argc, char* argv[])
         grid_3d_b[i] = (uint64_t **) malloc( sizeof(uint64_t *) * dim_y);
         for(j = 0; j < dim_y; j++)
         {
-          idx = j * dim_x + i * dim_x * dim_y;
+          // idx = j * dim_x + i * dim_x * dim_y;
+          idx = dim_z * (j + dim_y * i);
+#ifdef DEBUG
+        printf("Index: %" PRId64 "\n", idx);
+#endif
           grid_3d_a[i][j] = &data_cntr_a[idx];
           grid_3d_b[i][j] = &data_cntr_b[idx];
         }
@@ -469,7 +473,7 @@ int main(int argc, char* argv[])
         grid_1d_a[i] = (uint64_t)( base_a + ((uint64_t)(i) * stor_size));
         grid_1d_b[i] = (uint64_t)( base_b + ((uint64_t)(i) * stor_size));
 #ifdef DEBUG
-        printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
+        // printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
         // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_1d_b[i]);
 #endif
       }
