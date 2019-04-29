@@ -12,6 +12,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include "pims.h"
 
 #define SLOTS_PER_GB 134217728

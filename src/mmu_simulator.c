@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
+#include <getopt.h>
 #include "pims.h"
 
 // #define DEBUG
