@@ -13,6 +13,8 @@
 #include <string.h>
 #include <inttypes.h>
 #include <getopt.h>
+#include <math.h>
+#include <time.h>
 #include "pims.h"
 
 // #define DEBUG
@@ -69,14 +71,15 @@ static int mapVirtualaddr(uint64_t virtual_addr,
       // Page table hit
       if( page_table[i].virtual_page == virtual_page )
       {
-        *physical_addr = (uint64_t)( (i << VIRTUAL_PAGE_SHIFT) | offset );
+        *physical_addr = (uint64_t)( ( page_table[i].page_frame
+                                       << VIRTUAL_PAGE_SHIFT) | offset );
         return 0;
       }
     }
-    // page table miss, add new entry
-    pta_miss ++;
+    // Add new entry
     page_table[nextEntryIndex].virtual_page = virtual_page;
-    *physical_addr = (uint64_t)( (nextEntryIndex << VIRTUAL_PAGE_SHIFT) | offset);
+    *physical_addr = (uint64_t)( ( page_table[nextEntryIndex].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset);
     nextEntryIndex ++;
     return 0;
   }
@@ -87,7 +90,8 @@ static int mapVirtualaddr(uint64_t virtual_addr,
       // Page table hit
       if( page_table[i].virtual_page == virtual_page )
       {
-        *physical_addr = (uint64_t)( (i << VIRTUAL_PAGE_SHIFT) | offset );
+        *physical_addr = (uint64_t)( ( page_table[i].page_frame
+                                       << VIRTUAL_PAGE_SHIFT) | offset );
         return 0;
       }
       else
@@ -103,7 +107,8 @@ static int mapVirtualaddr(uint64_t virtual_addr,
     // page table miss, find indexOfOldest
     pta_miss ++;
     page_table[indexOfOldest].virtual_page = virtual_page;
-    *physical_addr = (uint64_t)((indexOfOldest << VIRTUAL_PAGE_SHIFT) | offset);
+    *physical_addr = (uint64_t)( ( page_table[indexOfOldest].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset );
     return 0;
   }
 }
@@ -119,6 +124,7 @@ int main(int argc, char* argv[])
   int i = 0;
   int ret = 0;
   int done = 0;
+  srand(time(NULL));
 
   /* PAGE TABLE*/
   uint64_t capacity = 0;               // HMC capacity
@@ -202,6 +208,8 @@ int main(int argc, char* argv[])
     printf("Error: Out of memory\n");
     return -1;
   }
+
+  /* todo: generate random page frame to page table */
   for( i = 0; i < entries; i++ )
   {
     page_table[i].virtual_page = -1;

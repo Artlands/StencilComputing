@@ -19,6 +19,7 @@
 typedef struct pta_node
 {
   int64_t virtual_page;
+  int64_t page_frame;
   int64_t age;
 }pta_node;
 

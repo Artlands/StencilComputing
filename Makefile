@@ -25,7 +25,7 @@ grid_generator: $(SRC)/grid_generator.o $(SRC)/pims_util.o
 	$(CC) $(CFLAGS) -o $@ $(SRC)/grid_generator.o $(SRC)/pims_util.o
 
 mmu_simulator: $(SRC)/mmu_simulator.o $(SRC)/pims_util.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/mmu_simulator.o $(SRC)/pims_util.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/mmu_simulator.o $(SRC)/pims_util.o -lm
 
 host_cacheSim: $(SRC)/host_cacheSim.o $(SRC)/pims_util.o
 	$(CC) $(CFLAGS) -o $@ $(SRC)/host_cacheSim.o $(SRC)/pims_util.o -lm
