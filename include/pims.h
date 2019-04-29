@@ -13,11 +13,10 @@
 // #define CACHE_SIZE 32768      // Total cache size 32KB
 // #define CACHE_SIZE 131072     // Total cache size 128KB
 #define CACHE_SIZE 8388608       // Total cache size 8MB
-// #define BLOCK_SIZE 128
 #define BLOCK_SIZE 256
 #define NUM_BLOCKS (CACHE_SIZE/BLOCK_SIZE)
 #define WAYS 8
-#define SETS (NUM_BLOCKS/WAY)
+#define SETS (NUM_BLOCKS/WAYS)
 
 /* Masks for Virtual address */
 #define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
@@ -69,24 +68,3 @@ typedef struct queue
 }queue;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
-extern int read_trace( FILE *infile, trace_node *trace);
-
-//
-// /*
-//  * struct pimsbuf
-//  * contains struct data for pims buffer
-//  */
-//
-// struct pimsbuf{
-//   uint32_t pimsid;          // pims id
-//   uint32_t in_size;         // input buffer size
-//   uint32_t out_size;        // output buffer size
-//   uint64_t *in_addr;        // save input address array
-//   struct flit *out_addr;    // save output FLICT array
-// };
-//
-// struct flit{
-//   uint32_t flitid;
-//   int size;
-//   uint64_t addr[16];
-// };

@@ -24,12 +24,7 @@ uint64_t nextEntryIndex;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int read_trace( FILE *infile, trace_node *trace);
-
-extern void write_to_file(FILE* fp,
-                          char* op,
-                          int num_bytes,
-                          int procid,
-                          uint64_t addr);
+extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
 static int mapVirtualaddr(uint64_t virtual_addr,
                           uint64_t entries,

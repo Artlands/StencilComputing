@@ -12,18 +12,16 @@
 #include <string.h>
 #include <inttypes.h>
 #include <fcntl.h>
+#include "pims.h"
 
 #define SLOTS_PER_GB 134217728
 // #define DEBUG
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
-extern int getshiftamount( uint32_t bsize,
-                           uint32_t *shiftamt );
 
-extern int getpimsid (int *pimsid,
-                     uint64_t addr,
-                     uint32_t shiftamt,
-                     uint32_t num_vaults);
+extern int getshiftamount( uint32_t bsize, uint32_t *shiftamt );
+extern int getpimsid (int *pimsid, uint64_t addr, uint32_t shiftamt, uint32_t num_vaults);
+extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
 // Write stencil information
 void write_sten_info(FILE* fp, char* filename, int dim, int dim_x, int dim_y, int dim_z,
@@ -54,16 +52,6 @@ void write_sten_info(FILE* fp, char* filename, int dim, int dim_x, int dim_y, in
   fprintf(fp,"# Stencil Coefficients: %d\n", sten_coeff);
   fprintf(fp,"# Stencil Data Type:    %s\n", data_type);
   fprintf(fp,"#==============================================================================\n");
-}
-
-/*
- * Write traces
- * Format: {WR,RD,PIMS_RD}:{NUM_BYTES}:{PROCID}:{0xADDR}
- *
- */
-void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr)
-{
-  fprintf(fp, "%s:%d:%d:0x%016"PRIX64"\n", op, num_bytes, procid, addr);
 }
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
