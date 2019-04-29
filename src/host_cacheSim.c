@@ -292,7 +292,7 @@ printf("Reading memory trace file...\n");
                     "HOST_RD", read_num,
                     "HOST_WR", write_num,
                     hits, misses,
-                    hit_rate, miss_rate )
+                    hit_rate, miss_rate );
 
 cleanup:
   for( i = 0; i < sets; i++ )
