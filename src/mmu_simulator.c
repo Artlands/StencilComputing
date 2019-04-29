@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  sprintf(outfilename, "%s%s", infilename, "phy");
+  sprintf(outfilename, "%s%s", infilename, ".phy");
 
   infile = fopen(infilename, "r");
   if( infile == NULL ){

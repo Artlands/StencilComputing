@@ -24,8 +24,10 @@ extern int getpimsid (int *pimsid, uint64_t addr, uint32_t shiftamt, uint32_t nu
 extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
 // Write stencil information
-void write_sten_info(FILE* fp, char* filename, int dim, int dim_x, int dim_y, int dim_z,
-                     uint32_t cntr_size, int sten_order, int sten_coeff, char* data_type)
+void write_sten_info(FILE* fp, char* filename, int dim,
+                     int dim_x, int dim_y, int dim_z,
+                     uint32_t cntr_size, int sten_order,
+                     int sten_coeff, char* data_type)
 {
   uint32_t inner = 0;
   switch(dim)
@@ -100,7 +102,7 @@ int main(int argc, char* argv[])
   FILE *outfile = NULL;     // save trace file
   FILE *logfile = NULL;     // save trace log
   char filename[1024];
-  char tracelog[2014];
+  char tracelog[1024];
   char ops[10];
   int num_bytes = 1;            // number of bytes for each ops
 
@@ -323,7 +325,8 @@ int main(int argc, char* argv[])
   sprintf(tracelog, "../traces/trace.log");
 
   logfile = fopen(tracelog, "a");
-  if( logfile == NULL ) {
+  if( logfile == NULL )
+  {
     printf("ERROR: Cannot open trace log file\n");
     return -1;
   }
@@ -383,7 +386,7 @@ int main(int argc, char* argv[])
   offset = (uint64_t)(stor_size * (cntr_size + 1));
 
   /* Manually select the start address, it can be any arbitrary address */
-  base_a = 0x30C0A94F72CE2090;
+  base_a = 0x00C0A94F72CE2090;
   base_b = base_a + offset;
 
   printf("%s\n", "Allocating memory space... ");
@@ -521,13 +524,13 @@ int main(int argc, char* argv[])
   {
     if( flag == 1)
     {
-      sprintf(filename, "../traces/PIMS-3D-27points-X%dY%dZ%d.out",
+      sprintf(filename, "../traces/PIMS-3D-27points-X%dY%dZ%d",
               dim_x, dim_y, dim_z);
       num_bytes = sten_coeff * (int)stor_size;
     }
     else
     {
-      sprintf(filename, "../traces/3D-27points-X%dY%dZ%d.out",
+      sprintf(filename, "../traces/3D-27points-X%dY%dZ%d",
               dim_x, dim_y, dim_z);
       num_bytes = (int)stor_size;
     }
@@ -630,13 +633,13 @@ int main(int argc, char* argv[])
   {
     if( flag == 1 )
     {
-      sprintf(filename, "../traces/PIMS-2D-9points-X%dY%d.out",
+      sprintf(filename, "../traces/PIMS-2D-9points-X%dY%d",
               dim_x, dim_y);
       num_bytes = sten_coeff * (int)stor_size;
     }
     else
     {
-      sprintf(filename, "../traces/2D-9points-X%dY%d.out",
+      sprintf(filename, "../traces/2D-9points-X%dY%d",
               dim_x, dim_y);
       num_bytes = (int)stor_size;
     }
@@ -718,13 +721,13 @@ int main(int argc, char* argv[])
     sten_ptnum = 2 * sten_order * dim + 1;
     if( flag == 1 )
     {
-      sprintf(filename, "../traces/PIMS-%dD-%dpoints-O%dX%dY%dZ%d.out",
+      sprintf(filename, "../traces/PIMS-%dD-%dpoints-O%dX%dY%dZ%d",
               dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
       num_bytes = sten_coeff * (int)stor_size;
     }
     else
     {
-      sprintf(filename, "../traces/%dD-%dpoints-O%dX%dY%dZ%d.out",
+      sprintf(filename, "../traces/%dD-%dpoints-O%dX%dY%dZ%d",
               dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
       num_bytes = (int)stor_size;
     }

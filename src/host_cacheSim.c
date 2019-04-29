@@ -20,6 +20,22 @@
 extern int read_trace( FILE *infile, trace_node *trace);
 extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
+void write_cache_info( FILE* fp, char* filename,
+                       char* read_op, uint64_t read_num,
+                       char* write_op, uint64_t write_num,
+                       uint64_t hits, uint64_t misses,
+                       double hit_rate, double miss_rate )
+{
+  fprintf(fp, "# Trace file path: %s\n", filename);
+  fprintf(fp, "# %s:              %llu\n", read_op, read_num);
+  fprintf(fp, "# %s:              %llu\n", write_op, write_num);
+  fprintf(fp, "# Total hits:      %llu\n", hits);
+  fprintf(fp, "# Total misses:    %llu\n", misses);
+  fprintf(fp, "# Hits rate:       %f\n", hit_rate);
+  fprintf(fp, "# Misses rate:     %f\n", miss_rate);
+  fprintf(fp, "#==============================================================================\n");
+}
+
 /*
  * Main Function, Takes command line arguments, read physical memory address
  * traces, simulate 'n-way' cache, generate memory access trace if cache miss
@@ -33,12 +49,15 @@ int main(int argc, char* argv[])
   uint64_t idx = 0;
   int ret = 0;
   int done = 0;
+  char *token;
 
   /* MEMORY TRACE */
   char infilename[1024];
   char outfilename[1024];
+  char cachelog[1024];
   FILE *infile = NULL;
   FILE *outfile = NULL;
+  FILE *logfile = NULL;   // save trace log
   trace_node trace;
 
   /* CACHE */
@@ -61,6 +80,8 @@ int main(int argc, char* argv[])
   /* Cache records*/
   uint64_t hits = 0;
   uint64_t misses = 0;
+  uint64_t read_num = 0;
+  uint64_t write_num = 0;
   double hit_rate;
   double miss_rate;
 
@@ -118,14 +139,24 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  sprintf(outfilename, "%s%s", infilename, "cached");
+  token = strtok(infilename, ".");
+  sprintf(outfilename, "%s%s", token, ".cached");
 
   outfile = fopen(outfilename, "w");
   if( outfile == NULL ){
     printf("ERROR: Cannot open output memory trace file\n");
     return -1;
   }
-  /* ---- End Sanity Check ---- */
+
+  sprintf(cachelog, "../traces/cache.log");
+  logfile = fopen(cachelog, "a");
+  if( logfile == NULL )
+  {
+    printf("ERROR: Cannot open cache log file\n");
+    return -1;
+  }
+/* ---- End Sanity Check ---- */
+
 
   /* Initialization of cache*/
   num_block = cache_size/block_size;
@@ -204,6 +235,15 @@ printf("Reading memory trace file...\n");
     if( processed_flag == 0 )
     {
       misses ++;
+
+      /* Get all read and write operation number*/
+      if( strcmp( trace.op, "HOST_RD" ) == 0 ){
+        read_num ++;
+      }
+      if( strcmp( trace.op, "HOST_WR" ) == 0 ){
+        write_num ++;
+      }
+
 #ifdef DEBUG
         printf("Miss!\n");
 #endif
@@ -244,8 +284,15 @@ printf("Reading memory trace file...\n");
   hit_rate = (((double)(hits))/((double)( hits + misses )));
   miss_rate = (((double)(misses))/((double)( hits + misses )));
 
+#ifdef DEBUG
   printf("Cache hit rate: %f\n", hit_rate);
   printf("Cache miss rate: %f\n", miss_rate);
+#endif
+  write_cache_info( logfile, infilename,
+                    "HOST_RD", read_num,
+                    "HOST_WR", write_num,
+                    hits, misses,
+                    hit_rate, miss_rate )
 
 cleanup:
   for( i = 0; i < sets; i++ )
@@ -261,6 +308,7 @@ cleanup:
 
   fclose(infile);
   fclose(outfile);
+  fclose(logfile);
 
   return 0;
 }
