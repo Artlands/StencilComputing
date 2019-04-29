@@ -7,7 +7,7 @@ CACHE_SIZE=131072     # Total cache size 128KB
 BLOCK_SIZE=128
 # BLOCK_SIZE=256
 WAYS=8
-FILE=../traces/2D-13points-O3X1024Y1024Z0.outphy
+FILE=../traces/2D-21points-O5X1024Y1024Z0.phy
 
 echo "Executing: $CACHE -c $CACHE_SIZE -b $BLOCK_SIZE -w $WAYS -f $FILE"
 
