@@ -9,15 +9,6 @@
 #define PAGESIZE 4096
 #define GB 1073741824
 
-/* Cache Parameters */
-// #define CACHE_SIZE 32768      // Total cache size 32KB
-// #define CACHE_SIZE 131072     // Total cache size 128KB
-// #define CACHE_SIZE 8388608       // Total cache size 8MB
-// #define BLOCK_SIZE 256
-// #define NUM_BLOCKS (CACHE_SIZE/BLOCK_SIZE)
-// #define WAYS 8
-// #define SETS (NUM_BLOCKS/WAYS)
-
 /* Masks for Virtual address */
 #define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000
 #define VIRTUAL_OFFSET_MASK 0x0000000000000FFF
