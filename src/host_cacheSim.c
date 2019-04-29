@@ -28,13 +28,13 @@ void write_cache_info( FILE* fp, char* filename, uint64_t ways,
                        double hit_rate, double miss_rate )
 {
   fprintf(fp, "# Trace file path: %s\n", filename);
-  fprintf(fp, "# Cache ways:      %llu\n", ways);
-  fprintf(fp, "# Cache size:      %llu\n", cache_size);
-  fprintf(fp, "# Block ways:      %llu\n", block_size);
-  fprintf(fp, "# HOST READ:       %llu\n", read_num);
-  fprintf(fp, "# HOST WRITE:      %llu\n", write_num);
-  fprintf(fp, "# Total hits:      %llu\n", hits);
-  fprintf(fp, "# Total misses:    %llu\n", misses);
+  fprintf(fp, "# Cache ways:      %" PRId64 "\n", ways);
+  fprintf(fp, "# Cache size:      %" PRId64 "\n", cache_size);
+  fprintf(fp, "# Block ways:      %" PRId64 "\n", block_size);
+  fprintf(fp, "# HOST READ:       %" PRId64 "\n", read_num);
+  fprintf(fp, "# HOST WRITE:      %" PRId64 "\n", write_num);
+  fprintf(fp, "# Total hits:      %" PRId64 "\n", hits);
+  fprintf(fp, "# Total misses:    %" PRId64 "\n", misses);
   fprintf(fp, "# Hits rate:       %f\n", hit_rate);
   fprintf(fp, "# Misses rate:     %f\n", miss_rate);
   fprintf(fp, "#==============================================================================\n");
@@ -165,8 +165,8 @@ int main(int argc, char* argv[])
   sets = num_block/ways;
 
 #ifdef DEBUG
-        printf("# Blocks: %llu\n", num_block);
-        printf("Sets: %llu\n", sets);
+        printf("# Blocks: %" PRId64 "\n", num_block);
+        printf("Sets: %" PRId64 "\n", sets);
 #endif
 
   tag_field = (uint64_t **) malloc( sizeof( uint64_t *) * sets);
@@ -212,7 +212,7 @@ printf("Reading memory trace file...\n");
     tag = (uint64_t)( block_addr >> (uint64_t)log2(sets) );
 
 #ifdef DEBUG
-    printf("Memory address: %llu, Sets: %llu, Ways: %llu, Block address: %llu, Index: %llu, Tag: %llu ",
+    printf("Memory address: %" PRId64 ", Sets: %" PRId64 ", Ways: %" PRId64 ", Block address: %" PRId64 ", Index: %" PRId64 ", Tag: %" PRId64 " ",
            trace.addr, sets, ways, block_addr, index, tag);
 #endif
     /* Flag is set to 1 when address is processed */

@@ -28,7 +28,7 @@ mmu_simulator: $(SRC)/mmu_simulator.o $(SRC)/pims_util.o
 	$(CC) $(CFLAGS) -o $@ $(SRC)/mmu_simulator.o $(SRC)/pims_util.o
 
 host_cacheSim: $(SRC)/host_cacheSim.o $(SRC)/pims_util.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/host_cacheSim.o $(SRC)/pims_util.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/host_cacheSim.o $(SRC)/pims_util.o -lm
 
 clean:
 	rm -Rf ./src/*.o

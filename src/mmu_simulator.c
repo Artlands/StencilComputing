@@ -190,9 +190,9 @@ int main(int argc, char* argv[])
   entries = memSize / page_size;
 
 #ifdef DEBUG
-  printf("Page size: %llu\n", page_size );
-  printf("Memory size: %llu\n", memSize );
-  printf("Entries: %llu\n", entries);
+  printf("Page size: %" PRId64 "\n", page_size );
+  printf("Memory size: %" PRId64 "\n", memSize );
+  printf("Entries: %" PRId64 "\n", entries);
 #endif
 
   /* Init Page table */
@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
      }
   }
 
-  printf("PageTable misses: %llu\n", pta_miss);
+  printf("PageTable misses: %" PRId64 "\n", pta_miss);
 
   free(page_table);
   fclose(infile);
