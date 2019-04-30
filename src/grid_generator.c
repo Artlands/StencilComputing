@@ -101,10 +101,10 @@ int main(int argc, char* argv[])
   uint64_t page_size = PAGESIZE;       // page size
   uint64_t entries = 0;                // number of entries
   pta_node *page_table = NULL;         // page table
-  pta_miss = 0;
-  oldestAge = 0;
-  indexOfOldest = 0;
-  nextEntryIndex = 0;
+  uint64_t pta_miss = 0;
+  uint64_t oldestAge = 0;
+  uint64_t indexOfOldest = 0;
+  uint64_t nextEntryIndex = 0;
   int randframe;                  // generate random page frame
 
   while( (ret = getopt( argc, argv, "x:y:z:t:T:O:C:p:c:b:v:h")) != -1 )
