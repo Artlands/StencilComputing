@@ -16,7 +16,7 @@
 #include <getopt.h>
 #include "pims.h"
 
-#define DEBUG
+// #define DEBUG
 
 /* Global variables */
 uint64_t pta_miss = 0;
@@ -415,7 +415,7 @@ int main(int argc, char* argv[])
 
   /* Manually select the start address, it can be any arbitrary address */
   base_a = 0x0000000072CE2090;
-  base_b = base_a + offset;
+  base_b = base_a + 0x0000000000E59068 + offset;
 
   printf("%s\n", "Allocating memory space... ");
 
@@ -498,7 +498,7 @@ int main(int argc, char* argv[])
                        page_size,
                        page_table,
                        &grid_1d_a[i]);
-        mapVirtualaddr(virtual_addr_a,
+        mapVirtualaddr(virtual_addr_b,
                        entries,
                        page_size,
                        page_table,
@@ -523,7 +523,7 @@ int main(int argc, char* argv[])
                          page_size,
                          page_table,
                          &grid_2d_a[i][j]);
-          mapVirtualaddr(virtual_addr_a,
+          mapVirtualaddr(virtual_addr_b,
                          entries,
                          page_size,
                          page_table,
@@ -551,7 +551,7 @@ int main(int argc, char* argv[])
                            page_size,
                            page_table,
                            &grid_3d_a[i][j][k]);
-            mapVirtualaddr(virtual_addr_a,
+            mapVirtualaddr(virtual_addr_b,
                            entries,
                            page_size,
                            page_table,
