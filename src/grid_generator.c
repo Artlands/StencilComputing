@@ -16,7 +16,7 @@
 #include <getopt.h>
 #include "pims.h"
 
-#define DEBUG
+// #define DEBUG
 
 /* Global variables */
 uint64_t pta_miss;
@@ -550,7 +550,7 @@ int main(int argc, char* argv[])
                          &grid_2d_b[i][j]);
 #ifdef DEBUG
           printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-          printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_1d_a[i][j]);
+          printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_2d_a[i][j]);
 #endif
         }
       }
@@ -832,7 +832,7 @@ int main(int argc, char* argv[])
           // Central point
           write_to_file(outfile, ops, num_bytes, vaults, grid_1d_a[i]);
 #ifdef DEBUG
-          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, vaults, grid_1d_a[i]);
+          // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, vaults, grid_1d_a[i]);
 #endif
 
           if( flag == 1)
@@ -851,7 +851,7 @@ int main(int argc, char* argv[])
             sprintf(ops, "PIMS_RD");
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
 #ifdef DEBUG
-          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i]);
+          // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i]);
 #endif
           }
           else
@@ -867,8 +867,8 @@ int main(int argc, char* argv[])
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
 #ifdef DEBUG
-          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i-r]);
-          printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i+r]);
+          // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i-r]);
+          // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i+r]);
 #endif
           }
 
@@ -1088,8 +1088,8 @@ void mapVirtualaddr(uint64_t virtual_addr, uint64_t entries, uint64_t page_size,
   int64_t offset = (int64_t)(virtual_addr & VIRTUAL_OFFSET_MASK);
 
 #ifdef DEBUG
-  printf("Virtual page:%"PRIX64"\n", virtual_page);
-  printf("Offset:%"PRIX64"\n", offset);
+  // printf("Virtual page:%"PRIX64"\n", virtual_page);
+  // printf("Offset:%"PRIX64"\n", offset);
 #endif
 
   /* LRU page replacement algorithm
