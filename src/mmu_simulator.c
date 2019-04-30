@@ -29,6 +29,45 @@ uint64_t nextEntryIndex;
 extern int read_trace( FILE *infile, trace_node *trace);
 extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
+int geneRandom(int size)
+{
+  int i, n;
+  static int numNums = 0;
+  static int *numArr = NULL;
+
+  // Initialize with a specific size.
+
+  if (size >= 0) {
+     if (numArr != NULL)
+         free (numArr);
+     if ((numArr = malloc (sizeof(unsigned) * size)) == NULL)
+         return -1;
+     for (i = 0; i  < size; i++)
+         numArr[i] = i;
+     numNums = size;
+  }
+
+  // Error if no numbers left in pool.
+
+  if (numNums == 0)
+    return -2;
+
+  // Get random number from pool and remove it (rnd in this
+  //   case returns a number between 0 and numNums-1 inclusive).
+
+  n = rand() % numNums;
+  i = numArr[n];
+  numArr[n] = numArr[numNums-1];
+  numNums--;
+  if (numNums == 0)
+  {
+     free (numArr);
+     numArr = 0;
+  }
+
+  return i;
+}
+
 static int mapVirtualaddr(uint64_t virtual_addr,
                           uint64_t entries,
                           uint64_t page_size,
@@ -136,6 +175,7 @@ int main(int argc, char* argv[])
   oldestAge = 0;
   indexOfOldest = 0;
   nextEntryIndex = 0;
+  int randframe;                  // generate random page frame
 
   /* MEMORY TRACE*/
   char infilename[1024];
@@ -194,6 +234,11 @@ int main(int argc, char* argv[])
   /* Initialization */
   memSize = (uint64_t)(capacity * GB);
   entries = memSize / page_size;
+  randframe = geneRandom((int)entries); // 2^21 -1
+
+#ifdef DEBUG
+  printf("Page frame: %u\n", randframe );
+#endif
 
 #ifdef DEBUG
   printf("Page size: %" PRId64 "\n", page_size );
@@ -209,12 +254,20 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  /* todo: generate random page frame to page table */
-  for( i = 0; i < entries; i++ )
+  /* Generate random page frame to page table */
+  for( i = 0; i < entries ; i++ )
   {
     page_table[i].virtual_page = -1;
+    page_table[i].page_frame = randframe;
     page_table[i].age = 0;
+    randframe = geneRandom(-1);
   }
+
+
+#ifdef DEBUG
+  printf("Finish frame: %u\n", randframe );
+  printf("i: %d\n", i );
+#endif
 
   /* read first request from the input file */
   done = read_trace( infile, &trace );

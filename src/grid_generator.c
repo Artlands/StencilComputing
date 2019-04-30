@@ -440,7 +440,6 @@ int main(int argc, char* argv[])
         grid_3d_b[i] = (uint64_t **) malloc( sizeof(uint64_t *) * dim_y);
         for(j = 0; j < dim_y; j++)
         {
-          // idx = j * dim_x + i * dim_x * dim_y;
           idx = dim_z * (j + dim_y * i);
 #ifdef DEBUG
         printf("Index: %" PRId64 "\n", idx);
