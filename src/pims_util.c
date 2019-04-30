@@ -13,10 +13,10 @@
 #include "pims.h"
 
 /* Global variables */
-uint64_t pta_miss;
-uint64_t oldestAge;
-uint64_t indexOfOldest;
-uint64_t nextEntryIndex;
+extern uint64_t pta_miss;
+extern uint64_t oldestAge;
+extern uint64_t indexOfOldest;
+extern uint64_t nextEntryIndex;
 
 /* --------------------------------------------- READTRACE */
 
