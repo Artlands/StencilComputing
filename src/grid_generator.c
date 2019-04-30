@@ -18,6 +18,12 @@
 
 // #define DEBUG
 
+/* Global variables */
+uint64_t pta_miss = 0;
+uint64_t oldestAge = 0;
+uint64_t indexOfOldest = 0;
+uint64_t nextEntryIndex = 0;
+
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 
 extern int getshiftamount( uint32_t bsize, uint32_t *shiftamt );
@@ -101,10 +107,6 @@ int main(int argc, char* argv[])
   uint64_t page_size = PAGESIZE;       // page size
   uint64_t entries = 0;                // number of entries
   pta_node *page_table = NULL;         // page table
-  uint64_t pta_miss = 0;
-  uint64_t oldestAge = 0;
-  uint64_t indexOfOldest = 0;
-  uint64_t nextEntryIndex = 0;
   int randframe;                  // generate random page frame
 
   while( (ret = getopt( argc, argv, "x:y:z:t:T:O:C:p:c:b:v:h")) != -1 )
@@ -1003,3 +1005,84 @@ cleanup:
 
   return 0;
 }
+/* --------------------------------------------- MAPVIRTUALADDR */
+extern void mapVirtualaddr(uint64_t virtual_addr,
+                           uint64_t entries,
+                           uint64_t page_size,
+                           pta_node *page_table,
+                           uint64_t *physical_addr)
+{
+  /* vars */
+  int i = 0;
+
+  /* Get virtual page and offset */
+  int64_t virtual_page = (int64_t)((virtual_addr & VIRTUAL_PAGE_MASK)
+                                   >> VIRTUAL_PAGE_SHIFT);
+  int64_t offset = (int64_t)(virtual_addr & VIRTUAL_OFFSET_MASK);
+
+#ifdef DEBUG
+  // printf("Virtual page:%"PRIX64"\n", virtual_page);
+  // printf("Offset:%"PRIX64"\n", offset);
+#endif
+
+  /* LRU page replacement algorithm
+   *
+   * nextEntryIndex: point to the next available entry
+   * if nextEntryIndex < entries,
+   *    // do not need to consider age
+   *    traverse from 0 to nextEntryIndex to find if pagetable hit
+   *    if hit,return
+   *    else add new entry, nextEntryIndex++
+   * else
+        // pagetable is full
+   *    traverse from 0 to entries to find if a pagetable hit
+   *    if hit, return
+   *    else age++, find indexOfOldest, replace it to the new entry, return
+   *
+   */
+
+  if( nextEntryIndex < entries )
+  {
+    for( i = 0; i < nextEntryIndex; i++ )
+    {
+      // Page table hit
+      if( page_table[i].virtual_page == virtual_page )
+      {
+        *physical_addr = (uint64_t)( ( page_table[i].page_frame
+                                       << VIRTUAL_PAGE_SHIFT) | offset );
+      }
+    }
+    // Add new entry
+    page_table[nextEntryIndex].virtual_page = virtual_page;
+    *physical_addr = (uint64_t)( ( page_table[nextEntryIndex].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset);
+    nextEntryIndex ++;
+  }
+  else
+  {
+    for( i = 0; i < entries; i++)
+    {
+      // Page table hit
+      if( page_table[i].virtual_page == virtual_page )
+      {
+        *physical_addr = (uint64_t)( ( page_table[i].page_frame
+                                       << VIRTUAL_PAGE_SHIFT) | offset );
+      }
+      else
+      {
+        page_table[i].age++;
+        if( page_table[i].age > oldestAge )
+        {
+          oldestAge = page_table[i].age;
+          indexOfOldest = i;
+        }
+      }
+    }
+    // page table miss, find indexOfOldest
+    pta_miss ++;
+    page_table[indexOfOldest].virtual_page = virtual_page;
+    *physical_addr = (uint64_t)( ( page_table[indexOfOldest].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset );
+  }
+}
+/* EOF */
