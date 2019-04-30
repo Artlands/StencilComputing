@@ -16,7 +16,6 @@ $(SRC)/pims_util.o:$(SRC)/pims_util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 $(SRC)/grid_generator.o:$(SRC)/grid_generator.c
 	$(CC) $(CFLAGS) -c -o $@ $<
-
 $(SRC)/host_cacheSim.o:$(SRC)/host_cacheSim.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
