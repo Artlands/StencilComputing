@@ -7,7 +7,7 @@
 
 /* Physical Memory Parameters */
 #define PAGESIZE 4096
-#define SLOTS_PER_GB 1073741824           // in B
+#define SLOTS_PER_GB 1073741824
 
 /* Masks for Virtual address */
 #define VIRTUAL_PAGE_MASK 0xFFFFFFFFFFFFF000

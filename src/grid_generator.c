@@ -376,10 +376,21 @@ int main(int argc, char* argv[])
    * Initialize the pagetable
    *
    */
-  memSize = (uint64_t)(capacity * SLOTS_PER_GB);
+  memSize = (uint64_t)((uint64_t)capacity * (uint64_t)SLOTS_PER_GB);
   entries = memSize / page_size;
   randframe = geneRandom((int)entries); // 2^21 -1
 
+#ifdef DEBUG
+  // printf("%s%d\n", "Capacity: ", capacity);
+  // printf("%s%llu\n", "Memory: ", memSize);
+  // printf("%s%llu\n", "Entries: ", entries);
+  // int randframeT = geneRandom((int)entries); // 2^21 -1
+  // for ( i = 0; i < entries; i++ )
+  // {
+  //   printf("%s%d\n", "Random NUM: ", randframeT);
+  //   randframeT = geneRandom(-1);
+  // }
+#endif
   page_table = (pta_node *)malloc(entries * sizeof(pta_node));
   if( page_table == NULL )
   {
@@ -494,7 +505,7 @@ int main(int argc, char* argv[])
                        &grid_1d_b[i]);
 #ifdef DEBUG
         // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-        printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_1d_a[i]);
+        // printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_1d_a[i]);
 #endif
       }
       break;
@@ -519,7 +530,7 @@ int main(int argc, char* argv[])
                          &grid_2d_b[i][j]);
 #ifdef DEBUG
           // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-          printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_2d_a[i][j]);
+          // printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_2d_a[i][j]);
 #endif
         }
       }
@@ -547,7 +558,7 @@ int main(int argc, char* argv[])
                            &grid_3d_b[i][j][k]);
 #ifdef DEBUG
             // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-            printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_3d_a[i][j][k]);
+            // printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_3d_a[i][j][k]);
 #endif
           }
         }
@@ -1021,8 +1032,8 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
   int64_t offset = (int64_t)(virtual_addr & VIRTUAL_OFFSET_MASK);
 
 #ifdef DEBUG
-  // printf("Virtual page:%"PRIX64"\n", virtual_page);
-  // printf("Offset:%"PRIX64"\n", offset);
+  printf("Virtual page:%"PRIX64"\n", virtual_page);
+  printf("Offset:%"PRIX64"\n", offset);
 #endif
 
   /* LRU page replacement algorithm
@@ -1050,6 +1061,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
       {
         *physical_addr = (uint64_t)( ( page_table[i].page_frame
                                        << VIRTUAL_PAGE_SHIFT) | offset );
+        return;
       }
     }
     // Add new entry
@@ -1057,6 +1069,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
     *physical_addr = (uint64_t)( ( page_table[nextEntryIndex].page_frame
                                    << VIRTUAL_PAGE_SHIFT) | offset);
     nextEntryIndex ++;
+    return;
   }
   else
   {
@@ -1067,6 +1080,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
       {
         *physical_addr = (uint64_t)( ( page_table[i].page_frame
                                        << VIRTUAL_PAGE_SHIFT) | offset );
+        return;
       }
       else
       {
@@ -1083,6 +1097,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
     page_table[indexOfOldest].virtual_page = virtual_page;
     *physical_addr = (uint64_t)( ( page_table[indexOfOldest].page_frame
                                    << VIRTUAL_PAGE_SHIFT) | offset );
+    return;
   }
 }
 /* EOF */
