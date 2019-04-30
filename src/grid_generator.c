@@ -16,7 +16,7 @@
 #include <getopt.h>
 #include "pims.h"
 
-// #define DEBUG
+#define DEBUG
 
 /* Global variables */
 uint64_t pta_miss = 0;
@@ -493,7 +493,7 @@ int main(int argc, char* argv[])
                        page_table,
                        &grid_1d_b[i]);
 #ifdef DEBUG
-        printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
+        // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
         printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_1d_a[i]);
 #endif
       }
@@ -518,7 +518,7 @@ int main(int argc, char* argv[])
                          page_table,
                          &grid_2d_b[i][j]);
 #ifdef DEBUG
-          printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
+          // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
           printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_2d_a[i][j]);
 #endif
         }
@@ -546,7 +546,7 @@ int main(int argc, char* argv[])
                            page_table,
                            &grid_3d_b[i][j][k]);
 #ifdef DEBUG
-            printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
+            // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
             printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_3d_a[i][j][k]);
 #endif
           }
