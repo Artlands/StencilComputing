@@ -18,12 +18,6 @@
 
 // #define DEBUG
 
-/* Global variables */
-uint64_t pta_miss;
-uint64_t oldestAge;
-uint64_t indexOfOldest;
-uint64_t nextEntryIndex;
-
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 
 extern int getshiftamount( uint32_t bsize, uint32_t *shiftamt );
