@@ -30,7 +30,7 @@ void write_cache_info( FILE* fp, char* filename, uint64_t ways,
   fprintf(fp, "# Trace file path: %s\n", filename);
   fprintf(fp, "# Cache ways:      %" PRId64 "\n", ways);
   fprintf(fp, "# Cache size:      %" PRId64 "\n", cache_size);
-  fprintf(fp, "# Block size:      %" PRId64 "\n", block_size);
+  fprintf(fp, "# Block size:      %" PRId64 "%s\n", block_size, "K");
   fprintf(fp, "# HOST READ:       %" PRId64 "\n", read_num);
   fprintf(fp, "# HOST WRITE:      %" PRId64 "\n", write_num);
   fprintf(fp, "# Total hits:      %" PRId64 "\n", hits);
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 
 
   /* Initialization of cache*/
-  num_block = cache_size/block_size;
+  num_block = cache_size/(block_size*1024);
   sets = num_block/ways;
 
 #ifdef DEBUG

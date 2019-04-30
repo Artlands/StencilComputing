@@ -8,7 +8,7 @@ BLOCK_SIZE=64
 # BLOCK_SIZE=128
 # BLOCK_SIZE=256
 WAYS=8
-FILE=../traces/PIMS-2D-13points-O3X2048Y2048Z0.phy
+FILE=../traces/2D-13points-O3X128Y128Z0
 
 echo "Executing: $CACHE -c $CACHE_SIZE -b $BLOCK_SIZE -w $WAYS -f $FILE"
 
