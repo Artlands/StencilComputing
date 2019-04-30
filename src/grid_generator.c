@@ -2,6 +2,7 @@
  * _GRID_GENERATOR_C_
  *
  * FUNCTION TO GENERATOR STENCIL GRID VIRTUAL MEMORY ADDRESSES
+ * AND TRANSLATE INTO PHYSICAL ADDRESSES
  *
  */
 
@@ -15,14 +16,23 @@
 #include <getopt.h>
 #include "pims.h"
 
-#define SLOTS_PER_GB 134217728
 // #define DEBUG
+
+/* Global variables */
+uint64_t pta_miss;
+uint64_t oldestAge;
+uint64_t indexOfOldest;
+uint64_t nextEntryIndex;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 
 extern int getshiftamount( uint32_t bsize, uint32_t *shiftamt );
 extern int getpimsid (int *pimsid, uint64_t addr, uint32_t shiftamt, uint32_t num_vaults);
 extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
+
+int geneRandom(int size);
+void mapVirtualaddr(uint64_t virtual_addr, uint64_t entries, uint64_t page_size,
+                    pta_node *page_table, uint64_t *physical_addr);
 
 // Write stencil information
 void write_sten_info(FILE* fp, char* filename, int dim,
@@ -108,14 +118,27 @@ int main(int argc, char* argv[])
   int num_bytes = 1;            // number of bytes for each ops
 
   /* MALLOC MEMORY*/
-  uint64_t *data_cntr_a;       // data container
-  uint64_t *grid_1d_a;         // pointer container
-  uint64_t **grid_2d_a;        // pointer container
-  uint64_t ***grid_3d_a;       // pointer container
-  uint64_t *data_cntr_b;       // data container
-  uint64_t *grid_1d_b;         // pointer container
-  uint64_t **grid_2d_b;        // pointer container
-  uint64_t ***grid_3d_b;       // pointer container
+  uint64_t *data_cntr_a;             // data container
+  uint64_t *grid_1d_a;               // pointer container
+  uint64_t **grid_2d_a;              // pointer container
+  uint64_t ***grid_3d_a;             // pointer container
+  uint64_t *data_cntr_b;             // data container
+  uint64_t *grid_1d_b;               // pointer container
+  uint64_t **grid_2d_b;              // pointer container
+  uint64_t ***grid_3d_b;             // pointer container
+  uint64_t virtual_addr_a = 0x00ll;  // temporary store
+  uint64_t virtual_addr_b = 0x00ll;  // temporary store
+
+  /* PAGE TABLE*/
+  uint64_t memSize = 0;                // Main memory size
+  uint64_t page_size = PAGESIZE;       // page size
+  uint64_t entries = 0;                // number of entries
+  pta_node *page_table = NULL;         // page table
+  pta_miss = 0;
+  oldestAge = 0;
+  indexOfOldest = 0;
+  nextEntryIndex = 0;
+  int randframe;                  // generate random page frame
 
   while( (ret = getopt( argc, argv, "x:y:z:t:T:O:C:p:c:b:v:h")) != -1 )
   {
@@ -379,7 +402,31 @@ int main(int argc, char* argv[])
    *
    */
   procid = vaults;
+/*----------------------------------------------------------------------------*/
+  /*
+   * Initialize the pagetable
+   *
+   */
+  memSize = (uint64_t)(capacity * SLOTS_PER_GB);
+  entries = memSize / page_size;
+  randframe = geneRandom((int)entries); // 2^21 -1
 
+  page_table = (pta_node *)malloc(entries * sizeof(pta_node));
+  if( page_table == NULL )
+  {
+    printf("Error: Out of memory\n");
+    return -1;
+  }
+
+  /* Generate random page frame to page table */
+  for( i = 0; i < entries ; i++ )
+  {
+    page_table[i].virtual_page = -1;
+    page_table[i].page_frame = randframe;
+    page_table[i].age = 0;
+    randframe = geneRandom(-1);
+  }
+/*----------------------------------------------------------------------------*/
   /*
    * Caculate the base of each vector
    *
@@ -459,21 +506,29 @@ int main(int argc, char* argv[])
 
   /*
    * Generate memory addresses, store them in data container
-   * Ignore the least n bits based on the blocksize
-   * stor_size is set to 1 in order to force sequential addressing
-   * to be spread across different vaults
    *
    */
+/*----------------------------------------------------------------------------*/
   switch(dim)
   {
     case 1:
       for ( i = 0; i < dim_x; i++ )
       {
-        grid_1d_a[i] = (uint64_t)( base_a + ((uint64_t)(i) * stor_size));
-        grid_1d_b[i] = (uint64_t)( base_b + ((uint64_t)(i) * stor_size));
+        virtual_addr_a = (uint64_t)( base_a + ((uint64_t)(i) * stor_size));
+        virtual_addr_b = (uint64_t)( base_b + ((uint64_t)(i) * stor_size));
+        mapVirtualaddr(virtual_addr_a,
+                       entries,
+                       page_size,
+                       page_table,
+                       &grid_1d_a[i]);
+        mapVirtualaddr(virtual_addr_a,
+                       entries,
+                       page_size,
+                       page_table,
+                       &grid_1d_b[i]);
 #ifdef DEBUG
-        // printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
-        // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_1d_b[i]);
+        printf("%s%016" PRIX64 "\n", "A grid address: ", grid_1d_a[i]);
+        printf("%s%016" PRIX64 "\n", "B grid address: ", grid_1d_b[i]);
 #endif
       }
       break;
@@ -482,13 +537,23 @@ int main(int argc, char* argv[])
       {
         for( j = 0; j < dim_y; j++)
         {
-          grid_2d_a[i][j] = (uint64_t)( base_a + (uint64_t)((j + i * dim_y)
+          virtual_addr_a = (uint64_t)( base_a + (uint64_t)((j + i * dim_y)
                                         * stor_size) );
-          grid_2d_b[i][j] = (uint64_t)( base_b + (uint64_t)((j + i * dim_y)
+          virtual_addr_b = (uint64_t)( base_b + (uint64_t)((j + i * dim_y)
                                         * stor_size) );
+          mapVirtualaddr(virtual_addr_a,
+                         entries,
+                         page_size,
+                         page_table,
+                         &grid_2d_a[i][j]);
+          mapVirtualaddr(virtual_addr_a,
+                         entries,
+                         page_size,
+                         page_table,
+                         &grid_2d_b[i][j]);
 #ifdef DEBUG
           printf("%s%016" PRIX64 "\n", "A grid address: ", grid_2d_a[i][j]);
-          // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_2d_b[i][j]);
+          printf("%s%016" PRIX64 "\n", "B grid address: ", grid_2d_b[i][j]);
 #endif
         }
       }
@@ -500,13 +565,23 @@ int main(int argc, char* argv[])
         {
           for( k = 0; k < dim_z; k++)
           {
-            grid_3d_a[i][j][k] = (uint64_t)( base_a + (uint64_t)((k + (j + i
+            virtual_addr_a = (uint64_t)( base_a + (uint64_t)((k + (j + i
                                              * dim_y) * dim_z) * stor_size) );
-            grid_3d_b[i][j][k] = (uint64_t)( base_b + (uint64_t)((k + (j + i
+            virtual_addr_b = (uint64_t)( base_b + (uint64_t)((k + (j + i
                                              * dim_y) * dim_z) * stor_size) );
+            mapVirtualaddr(virtual_addr_a,
+                           entries,
+                           page_size,
+                           page_table,
+                           &grid_3d_a[i][j][k]);
+            mapVirtualaddr(virtual_addr_a,
+                           entries,
+                           page_size,
+                           page_table,
+                           &grid_3d_b[i][j][k]);
 #ifdef DEBUG
            printf("%s%016" PRIX64 "\n", "A grid address: ", grid_3d_a[i][j][k]);
-           // printf("%s%016" PRIX64 "\n", "B grid address: ", grid_3d_b[i][j][k]);
+           printf("%s%016" PRIX64 "\n", "B grid address: ", grid_3d_b[i][j][k]);
 #endif
           }
         }
@@ -936,6 +1011,7 @@ cleanup:
   }
 
   /* Deallocate memory */
+  free(page_table);
   switch(dim)
   {
     case 1:
@@ -962,4 +1038,120 @@ cleanup:
   /* End Deallocation */
 
   return 0;
+}
+
+int geneRandom(int size)
+{
+  int i, n;
+  static int numNums = 0;
+  static int *numArr = NULL;
+
+  // Initialize with a specific size.
+
+  if (size >= 0) {
+     if (numArr != NULL)
+         free (numArr);
+     if ((numArr = malloc (sizeof(unsigned) * size)) == NULL)
+         return -1;
+     for (i = 0; i  < size; i++)
+         numArr[i] = i;
+     numNums = size;
+  }
+
+  // Error if no numbers left in pool.
+
+  if (numNums == 0)
+    return -2;
+
+  // Get random number from pool and remove it (rnd in this
+  //   case returns a number between 0 and numNums-1 inclusive).
+
+  n = rand() % numNums;
+  i = numArr[n];
+  numArr[n] = numArr[numNums-1];
+  numNums--;
+  if (numNums == 0)
+  {
+     free (numArr);
+     numArr = 0;
+  }
+
+  return i;
+}
+
+void mapVirtualaddr(uint64_t virtual_addr, uint64_t entries, uint64_t page_size,
+                    pta_node *page_table, uint64_t *physical_addr)
+{
+  /* vars */
+  int i = 0;
+
+  /* Get virtual page and offset */
+  int64_t virtual_page = (int64_t)((virtual_addr & VIRTUAL_PAGE_MASK)
+                                   >> VIRTUAL_PAGE_SHIFT);
+  int64_t offset = (int64_t)(virtual_addr & VIRTUAL_OFFSET_MASK);
+
+#ifdef DEBUG
+  printf("Virtual page:%"PRIX64"\n", virtual_page);
+  printf("Offset:%"PRIX64"\n", offset);
+#endif
+
+  /* LRU page replacement algorithm
+   *
+   * nextEntryIndex: point to the next available entry
+   * if nextEntryIndex < entries,
+   *    // do not need to consider age
+   *    traverse from 0 to nextEntryIndex to find if pagetable hit
+   *    if hit,return
+   *    else add new entry, nextEntryIndex++
+   * else
+        // pagetable is full
+   *    traverse from 0 to entries to find if a pagetable hit
+   *    if hit, return
+   *    else age++, find indexOfOldest, replace it to the new entry, return
+   *
+   */
+
+  if( nextEntryIndex < entries )
+  {
+    for( i = 0; i < nextEntryIndex; i++ )
+    {
+      // Page table hit
+      if( page_table[i].virtual_page == virtual_page )
+      {
+        *physical_addr = (uint64_t)( ( page_table[i].page_frame
+                                       << VIRTUAL_PAGE_SHIFT) | offset );
+      }
+    }
+    // Add new entry
+    page_table[nextEntryIndex].virtual_page = virtual_page;
+    *physical_addr = (uint64_t)( ( page_table[nextEntryIndex].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset);
+    nextEntryIndex ++;
+  }
+  else
+  {
+    for( i = 0; i < entries; i++)
+    {
+      // Page table hit
+      if( page_table[i].virtual_page == virtual_page )
+      {
+        *physical_addr = (uint64_t)( ( page_table[i].page_frame
+                                       << VIRTUAL_PAGE_SHIFT) | offset );
+      }
+      else
+      {
+        page_table[i].age++;
+        if( page_table[i].age > oldestAge )
+        {
+          oldestAge = page_table[i].age;
+          indexOfOldest = i;
+        }
+      }
+    }
+    // page table miss, find indexOfOldest
+    pta_miss ++;
+    page_table[indexOfOldest].virtual_page = virtual_page;
+    *physical_addr = (uint64_t)( ( page_table[indexOfOldest].page_frame
+                                   << VIRTUAL_PAGE_SHIFT) | offset );
+  }
 }
