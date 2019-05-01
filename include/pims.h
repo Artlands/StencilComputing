@@ -14,6 +14,10 @@
 #define VIRTUAL_OFFSET_MASK 0x0000000000000FFF
 #define VIRTUAL_PAGE_SHIFT 12
 
+/* Cache Parameters */
+#define BLOCKSIZE 64
+#define WAYS 8
+
 /* ---------------------------------------------- DATA STRUCTURE*/
 
 typedef struct pta_node
@@ -22,6 +26,18 @@ typedef struct pta_node
   int64_t page_frame;
   int64_t age;
 }pta_node;
+
+typedef struct cache_node
+{
+  int cache_size;
+  int block_size;
+  int ways;
+  int sets;
+  uint64_t hits;
+  uint64_t misses;
+  double hit_rate;
+  double miss_rate;
+}cache_node;
 
 typedef struct trace_node
 {

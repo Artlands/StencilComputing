@@ -21,24 +21,11 @@
 extern int read_trace( FILE *infile, trace_node *trace);
 extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
 
-void write_cache_info( FILE* fp, char* filename, uint64_t ways,
+extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
                        uint64_t cache_size, uint64_t block_size,
                        uint64_t read_num, uint64_t write_num,
                        uint64_t hits, uint64_t misses,
-                       double hit_rate, double miss_rate )
-{
-  fprintf(fp, "# Trace file path: %s\n", filename);
-  fprintf(fp, "# Cache ways:      %" PRId64 "\n", ways);
-  fprintf(fp, "# Cache size:      %" PRId64 "\n", cache_size);
-  fprintf(fp, "# Block size:      %" PRId64 "%s\n", block_size, "K");
-  fprintf(fp, "# HOST READ:       %" PRId64 "\n", read_num);
-  fprintf(fp, "# HOST WRITE:      %" PRId64 "\n", write_num);
-  fprintf(fp, "# Total hits:      %" PRId64 "\n", hits);
-  fprintf(fp, "# Total misses:    %" PRId64 "\n", misses);
-  fprintf(fp, "# Hits rate:       %f\n", hit_rate);
-  fprintf(fp, "# Misses rate:     %f\n", miss_rate);
-  fprintf(fp, "#==============================================================================\n");
-}
+                       double hit_rate, double miss_rate );
 
 /*
  * Main Function, Takes command line arguments, read physical memory address
@@ -117,11 +104,11 @@ int main(int argc, char* argv[])
     }
   }
   /* ---- Sanity Check ----*/
-  if( cache_size != 32768 && cache_size != 131072 && cache_size != 8388608 )
-  {
-    printf("ERROR: Cache size is invalid\n");
-    return -1;
-  }
+  // if( cache_size != 32768 && cache_size != 131072 && cache_size != 8388608 )
+  // {
+  //   printf("ERROR: Cache size is invalid\n");
+  //   return -1;
+  // }
 
   if( block_size != 64 && block_size != 128 && block_size != 256 )
   {
@@ -161,12 +148,12 @@ int main(int argc, char* argv[])
 
 
   /* Initialization of cache*/
-  num_block = cache_size/(block_size*1024);
+  num_block = cache_size/block_size;
   sets = num_block/ways;
 
 #ifdef DEBUG
-        printf("# Blocks: %" PRId64 "\n", num_block);
-        printf("Sets: %" PRId64 "\n", sets);
+  printf("# Blocks: %" PRId64 "\n", num_block);
+  printf("Sets: %" PRId64 "\n", sets);
 #endif
 
   tag_field = (uint64_t **) malloc( sizeof( uint64_t *) * sets);
@@ -264,14 +251,28 @@ printf("Reading memory trace file...\n");
           break;
         }
       }
-      /* If all ways are occupied then traverse bst and replace indicated way*/
+      /* if no unused way, replace first way in appropriate set where nru = 0 */
+      if( processed_flag == 0 )
+      {
+        for( i = 0; i < ways; i++)
+        {
+          if(nru_reference[index][i] == 0)
+          {
+            tag_field[index][i] = tag;
+            nru_reference[index][i] = 1;
+            processed_flag = 1;
+            break;
+          }
+        }
+      }
       if( processed_flag == 0 )
       {
         tag_field[index][0] = tag;
-        for( j = 1; j < ways; j++ )
+        for( i = 0; i < ways; i++)
         {
-          nru_reference[index][j] = 0;
+          nru_reference[index][i] = 0;
         }
+        break;
       }
     }
     /* read next request from the input file until to the end of file*/

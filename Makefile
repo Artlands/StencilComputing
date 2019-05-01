@@ -11,12 +11,14 @@ CFLAGS := -std=c99 -I`pwd`/include/
 
 SRC = ./src
 
-all: grid_generator host_cacheSim
+all: grid_generator host_cacheSim stencil
 $(SRC)/pims_util.o:$(SRC)/pims_util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 $(SRC)/grid_generator.o:$(SRC)/grid_generator.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 $(SRC)/host_cacheSim.o:$(SRC)/host_cacheSim.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+$(SRC)/stencil.o:$(SRC)/stencil.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 grid_generator: $(SRC)/grid_generator.o $(SRC)/pims_util.o
@@ -24,6 +26,9 @@ grid_generator: $(SRC)/grid_generator.o $(SRC)/pims_util.o
 
 host_cacheSim: $(SRC)/host_cacheSim.o $(SRC)/pims_util.o
 	$(CC) $(CFLAGS) -o $@ $(SRC)/host_cacheSim.o $(SRC)/pims_util.o -lm
+
+stencil: $(SRC)/stencil.o $(SRC)/stencil.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/stencil.o $(SRC)/pims_util.o -lm
 
 clean:
 	rm -Rf ./src/*.o

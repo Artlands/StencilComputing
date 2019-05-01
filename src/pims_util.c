@@ -214,3 +214,21 @@ extern void write_sten_info(FILE* fp, char* filename, int dim,
   fprintf(fp,"#==============================================================================\n");
 }
 /* EOF */
+
+/* --------------------------------------------- WIRTE_CACHE_INFO */
+extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
+                       uint64_t cache_size, uint64_t block_size,
+                       uint64_t hits, uint64_t misses,
+                       double hit_rate, double miss_rate )
+{
+  fprintf(fp, "# Trace file path: %s\n", filename);
+  fprintf(fp, "# Cache ways:      %" PRId64 "\n", ways);
+  fprintf(fp, "# Cache size:      %" PRId64 "\n", cache_size);
+  fprintf(fp, "# Block size:      %" PRId64 "\n", block_size);
+  fprintf(fp, "# Total hits:      %" PRId64 "\n", hits);
+  fprintf(fp, "# Total misses:    %" PRId64 "\n", misses);
+  fprintf(fp, "# Hits rate:       %f\n", hit_rate);
+  fprintf(fp, "# Misses rate:     %f\n", miss_rate);
+  fprintf(fp, "#==============================================================================\n");
+}
+/* EOF */
