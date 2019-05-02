@@ -962,6 +962,85 @@ int main(int argc, char* argv[])
             write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
           }
         }
+        //---------------------------------------------------------------------
+        // // Read grid a, wirte grid b
+        // for( i = sten_order; i < (dim_x-sten_order); i++ )
+        // {
+        //   memset(ops, 0, sizeof(ops));
+        //   // Read operation from HOST
+        //   sprintf(ops, "HOST_RD");
+        //
+        //   ret = run_nru_simulation( &cache, grid_1d_b[i] );
+        //   if( ret == 2 )
+        //   {
+        //     // Central point
+        //     write_to_file(outfile, ops, num_bytes, vaults, grid_1d_b[i]);
+        //   }
+        //
+        // #ifdef DEBUG
+        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, vaults, grid_1d_a[i]);
+        // #endif
+        //
+        //   if( flag == 1)
+        //   {
+        //     if( getpimsid( &procid, grid_1d_a[i], shiftamt, vaults )!= 0 )
+        //     {
+        //       printf("ERROR: Failed to retrive PIMS id\n");
+        //       goto cleanup;
+        //     }
+        //     memset(ops, 0, sizeof(ops));
+        //     /*
+        //      * Read operation from PIMS
+        //      * Length always stor_size
+        //      *
+        //      */
+        //     sprintf(ops, "PIMS_RD");
+        //     write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
+        // #ifdef DEBUG
+        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i]);
+        // #endif
+        //   }
+        //   else
+        //   {
+        //     memset(ops, 0, sizeof(ops));
+        //     // Read operation from HOST
+        //     sprintf(ops, "HOST_RD");
+        //   }
+        //
+        //   // Orders points
+        //   for( r = 1; r <= sten_order; r++)
+        //   {
+        //     ret = run_nru_simulation( &cache, grid_1d_b[i-r] );
+        //     if( ret == 2 )
+        //     {
+        //       write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i-r]);
+        //     }
+        //     ret = run_nru_simulation( &cache, grid_1d_b[i+r] );
+        //     if( ret == 2 )
+        //     {
+        //       write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i+r]);
+        //     }
+        //
+        // #ifdef DEBUG
+        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i-r]);
+        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i+r]);
+        // #endif
+        //   }
+        //
+        //   memset(ops, 0, sizeof(ops));
+        //   /*
+        //    * Write operation from HOST
+        //    * Length always stor_size
+        //    *
+        //    */
+        //   sprintf(ops, "HOST_WR");
+        //   ret = run_nru_simulation( &cache, grid_1d_a[i] );
+        //   if( ret == 2 )
+        //   {
+        //     write_to_file(outfile, ops, stor_size, vaults, grid_1d_a[i]);
+        //   }
+        // }
+        //--------------------------------------------------------------------
         break;
       case 2:
         // Read grid a, wirte grid b
@@ -1277,6 +1356,7 @@ int run_nru_simulation( cache_node *cache, uint64_t address )
         if(nru_reference[index][i] == 0)
         {
           tag_field[index][i] = tag;
+          valid_field[index][i] = 1;
           nru_reference[index][i] = 1;
           processed_flag = 1;
           return 2;
@@ -1285,6 +1365,7 @@ int run_nru_simulation( cache_node *cache, uint64_t address )
       if( processed_flag == 0)
       {
         tag_field[index][0] = tag;
+        valid_field[index][0] = 1;
         for( i = 1; i < cache->ways; i++)
         {
           nru_reference[index][i] = 0;
