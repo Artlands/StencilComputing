@@ -220,6 +220,8 @@ extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
                        uint64_t cache_size, uint64_t block_size,
                        uint64_t load_hits, uint64_t load_misses,
                        uint64_t store_hits, uint64_t store_misses,
+                       uint64_t load, uint64_t store,
+                       uint64_t dirty_eviction,
                        double hit_rate, double miss_rate )
 {
   fprintf(fp, "# Trace file path: %s\n", filename);
@@ -230,6 +232,9 @@ extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
   fprintf(fp, "# Load misses:     %" PRId64 "\n", load_misses);
   fprintf(fp, "# Store hits:      %" PRId64 "\n", store_hits);
   fprintf(fp, "# Store misses:    %" PRId64 "\n", store_misses);
+  fprintf(fp, "# Load:            %" PRId64 "\n", load);
+  fprintf(fp, "# Store:           %" PRId64 "\n", store);
+  fprintf(fp, "# Dirty eviction:  %" PRId64 "\n", dirty_eviction);
   fprintf(fp, "# Hits rate:       %f\n", hit_rate);
   fprintf(fp, "# Misses rate:     %f\n", miss_rate);
   fprintf(fp, "#==============================================================================\n");
