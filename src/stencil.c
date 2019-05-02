@@ -450,7 +450,7 @@ int main(int argc, char* argv[])
   cache_node cache = {.cache_size = cache_size,
                       .block_size = BLOCKSIZE,
                       .ways = WAYS,
-                      .sets = num_block/WAYS
+                      .sets = num_block/WAYS,
                       .hits = 0,
                       .misses = 0};
 
