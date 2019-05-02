@@ -508,13 +508,13 @@ int main(int argc, char* argv[])
   valid  = (int *) malloc( sizeof( int ) * cache.sets);
   tag = (int **) malloc( sizeof( int *) * cache.sets);
   lru = (int **) malloc( sizeof( int *) * cache.sets);
-  // dirty = (int **) malloc( sizeof( int *) * cache.sets);
+  dirty = (int **) malloc( sizeof( int *) * cache.sets);
 
   for( i = 0; i < cache.sets; i++ )
   {
     tag[i] = (int *) malloc( sizeof( int ) * cache.ways);
     lru[i] = (int *) malloc( sizeof( int ) * cache.ways);
-    // dirty[i] = (int *) malloc( sizeof( int ) * cache.ways);
+    dirty[i] = (int *) malloc( sizeof( int ) * cache.ways);
   }
 
   printf("Initialize Cache...\n");
