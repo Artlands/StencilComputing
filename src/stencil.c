@@ -1159,8 +1159,10 @@ cleanup:
   }
 
   /* Deallocate memory */
+  printf("Free page table!\n");
   free(page_table);
 
+  printf("Free cache!\n");
   for( i = 0; i < cache.sets; i++ )
   {
     free(tag[i]);
@@ -1171,6 +1173,7 @@ cleanup:
   free(lru);
   free(valid);
 
+  printf("Free memory trace!\n");
   switch(dim)
   {
     case 1:
