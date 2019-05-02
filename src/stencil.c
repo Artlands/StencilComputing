@@ -28,7 +28,6 @@ uint64_t nextEntryIndex = 0;
 int *valid;
 int **tag;
 int **lru;
-int **dirty;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 
@@ -1157,6 +1156,8 @@ cleanup:
   {
     fclose(outfile);
   }
+  fclose(tracelogfile);
+  fclose(cachelogfile);
 
   /* Deallocate memory */
   free(page_table);
@@ -1165,12 +1166,10 @@ cleanup:
   {
     free(tag[i]);
     free(lru[i]);
-    // free(dirty[i]);
   }
 
   free(tag);
   free(lru);
-  // free(dirty);
   free(valid);
 
   switch(dim)
