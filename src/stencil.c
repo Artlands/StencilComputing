@@ -676,7 +676,6 @@ int main(int argc, char* argv[])
     // Write Stencil information
     write_sten_info(tracelogfile, filename, dim, dim_x, dim_y, dim_z,
                     cntr_size, sten_order, sten_coeff, data_type);
-    fclose(tracelogfile);
 
     // Read from grid a, wirte to grid b
     for( i = 1; i < (dim_x-1); i++ )
@@ -785,7 +784,6 @@ int main(int argc, char* argv[])
     // Write Stencil information
     write_sten_info(tracelogfile, filename, dim, dim_x, dim_y, dim_z,
                     cntr_size, sten_order, sten_coeff, data_type);
-    fclose(tracelogfile);
 
     // Read grid a, wirte grid b
     for( i = 1; i < (dim_x-1); i++ )
@@ -873,7 +871,6 @@ int main(int argc, char* argv[])
     // Write Stencil information
     write_sten_info(tracelogfile, filename, dim, dim_x, dim_y, dim_z,
                     cntr_size, sten_order, sten_coeff, data_type);
-    fclose(tracelogfile);
 
     switch(dim)
     {
