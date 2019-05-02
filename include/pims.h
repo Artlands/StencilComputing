@@ -33,6 +33,13 @@ typedef struct cache_node
   int block_size;
   int ways;
   int sets;
+  uint64_t dirty_eviction;
+  uint64_t load_hits;
+  uint64_t load_misses;
+  uint64_t store_hits;
+  uint64_t store_misses;
+  uint64_t load;
+  uint64_t store;
 }cache_node;
 
 typedef struct trace_node

@@ -59,14 +59,18 @@ extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
 
 int run_lru_simulation( cache_node *cache,
                         uint64_t address,
-                        int loadstore,
-                        uint64_t *dirty_eviction,
-                        uint64_t *load_hits,
-                        uint64_t *load_misses,
-                        uint64_t *store_hits,
-                        uint64_t *store_misses,
-                        uint64_t *load,
-                        uint64_t *store);
+                        int loadstore);
+
+// int run_lru_simulation( cache_node *cache,
+//                         uint64_t address,
+//                         int loadstore,
+//                         uint64_t dirty_eviction,
+//                         uint64_t load_hits,
+//                         uint64_t load_misses,
+//                         uint64_t store_hits,
+//                         uint64_t store_misses,
+//                         uint64_t load,
+//                         uint64_t store);
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
@@ -145,13 +149,6 @@ int main(int argc, char* argv[])
   // cache_node *cache;
   int cache_size;                     // specified by user
   int num_block;
-  uint64_t dirty_eviction = 0;
-  uint64_t load_hits = 0;
-  uint64_t load_misses = 0;
-  uint64_t store_hits = 0;
-  uint64_t store_misses = 0;
-  uint64_t load = 0;
-  uint64_t store = 0;
   double hit_rate = 0;
   double miss_rate = 0;
 
@@ -495,7 +492,14 @@ int main(int argc, char* argv[])
   cache_node cache = {.cache_size = cache_size,
                       .block_size = BLOCKSIZE,
                       .ways = WAYS,
-                      .sets = num_block/WAYS};
+                      .sets = num_block/WAYS,
+                      .dirty_eviction = 0,
+                      .load_hits = 0,
+                      .load_misses = 0,
+                      .store_hits = 0,
+                      .store_misses = 0,
+                      .load = 0,
+                      .store = 0};
 
 #ifdef DEBUG
   printf("# Blocks: %d\n", num_block);
@@ -935,16 +939,7 @@ int main(int argc, char* argv[])
         // Read operation from HOST
         sprintf(ops, "HOST_RD");
 
-        ret = run_lru_simulation( &cache,
-                                  grid_1d_a[i],
-                                  0,    //loadstore = 0 load, o/w write
-                                  &dirty_eviction,
-                                  &load_hits,
-                                  &load_misses,
-                                  &store_hits,
-                                  &store_misses,
-                                  &load,
-                                  &store);
+        ret = run_lru_simulation( &cache, grid_1d_a[i], 0); //loadstore = 0 load, o/w write
         if( ret == -1 )
         {
           // Central point
@@ -984,30 +979,12 @@ int main(int argc, char* argv[])
         // Orders points
         for( r = 1; r <= sten_order; r++)
         {
-          ret = run_lru_simulation( &cache,
-                                    grid_1d_a[i-r],
-                                    0,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_1d_a[i-r], 0);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
           }
-          ret = run_lru_simulation( &cache,
-                                    grid_1d_a[i+r],
-                                    0,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_1d_a[i+r], 0);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
@@ -1026,16 +1003,7 @@ int main(int argc, char* argv[])
          * Allways record write operation
          */
         sprintf(ops, "HOST_WR");
-        ret = run_lru_simulation( &cache,
-                                  grid_1d_b[i],
-                                  1,    //loadstore = 0 load, o/w write
-                                  &dirty_eviction,
-                                  &load_hits,
-                                  &load_misses,
-                                  &store_hits,
-                                  &store_misses,
-                                  &load,
-                                  &store);
+        ret = run_lru_simulation( &cache, grid_1d_b[i], 1);
         if( ret == -1 )
         {
           write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
@@ -1048,16 +1016,7 @@ int main(int argc, char* argv[])
         // Read operation from HOST
         sprintf(ops, "HOST_RD");
 
-        ret = run_lru_simulation( &cache,
-                                  grid_1d_b[i],
-                                  0,    //loadstore = 0 load, o/w write
-                                  &dirty_eviction,
-                                  &load_hits,
-                                  &load_misses,
-                                  &store_hits,
-                                  &store_misses,
-                                  &load,
-                                  &store);
+        ret = run_lru_simulation( &cache, grid_1d_b[i], 0);
         if( ret == -1 )
         {
           // Central point
@@ -1097,30 +1056,12 @@ int main(int argc, char* argv[])
         // Orders points
         for( r = 1; r <= sten_order; r++)
         {
-          ret = run_lru_simulation( &cache,
-                                    grid_1d_b[i-r],
-                                    0,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_1d_b[i-r], 0);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i-r]);
           }
-          ret = run_lru_simulation( &cache,
-                                    grid_1d_b[i+r],
-                                    0,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_1d_b[i+r], 0);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i+r]);
@@ -1139,16 +1080,7 @@ int main(int argc, char* argv[])
          * Allways record write operation
          */
         sprintf(ops, "HOST_WR");
-        ret = run_lru_simulation( &cache,
-                                  grid_1d_a[i],
-                                  1,    //loadstore = 0 load, o/w write
-                                  &dirty_eviction,
-                                  &load_hits,
-                                  &load_misses,
-                                  &store_hits,
-                                  &store_misses,
-                                  &load,
-                                  &store);
+        ret = run_lru_simulation( &cache, grid_1d_a[i], 1);
         if( ret == -1 )
         {
           write_to_file(outfile, ops, stor_size, vaults, grid_1d_a[i]);
@@ -1170,16 +1102,7 @@ int main(int argc, char* argv[])
           sprintf(ops, "HOST_RD");
 
           // Central point
-          ret = run_lru_simulation( &cache,
-                                    grid_2d_a[i][j],
-                                    0,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_2d_a[i][j], 0);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
@@ -1212,61 +1135,25 @@ int main(int argc, char* argv[])
           // Orders points
           for( r = 1; r <= sten_order; r++ )
           {
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_a[i-r][j],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_a[i-r][j], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i-r][j]);
             }
 
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_a[i+r][j],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_a[i+r][j], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i+r][j]);
             }
 
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_a[i][j-r],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_a[i][j-r], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j-r]);
             }
 
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_a[i][j+r],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_a[i][j+r], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j+r]);
@@ -1280,16 +1167,7 @@ int main(int argc, char* argv[])
            *
            */
           sprintf(ops, "HOST_WR");
-          ret = run_lru_simulation( &cache,
-                                    grid_2d_b[i][j],
-                                    1,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_2d_b[i][j], 1);
           write_to_file(outfile, ops, stor_size, vaults, grid_2d_b[i][j]);
         } //Endfor sten_order j
       }   //Endfor sten_order i
@@ -1304,16 +1182,7 @@ int main(int argc, char* argv[])
           sprintf(ops, "HOST_RD");
 
           // Central point
-          ret = run_lru_simulation( &cache,
-                                    grid_2d_b[i][j],
-                                    0,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_2d_b[i][j], 0);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i][j]);
@@ -1346,61 +1215,26 @@ int main(int argc, char* argv[])
           // Orders points
           for( r = 1; r <= sten_order; r++ )
           {
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_b[i-r][j],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_b[i-r][j],
+                                      0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i-r][j]);
             }
 
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_a[i+r][j],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_a[i+r][j], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i+r][j]);
             }
 
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_b[i][j-r],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_b[i][j-r],0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i][j-r]);
             }
 
-            ret = run_lru_simulation( &cache,
-                                      grid_2d_b[i][j+r],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_2d_b[i][j+r], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i][j+r]);
@@ -1414,16 +1248,7 @@ int main(int argc, char* argv[])
            *
            */
           sprintf(ops, "HOST_WR");
-          ret = run_lru_simulation( &cache,
-                                    grid_2d_a[i][j],
-                                    1,    //loadstore = 0 load, o/w write
-                                    &dirty_eviction,
-                                    &load_hits,
-                                    &load_misses,
-                                    &store_hits,
-                                    &store_misses,
-                                    &load,
-                                    &store);
+          ret = run_lru_simulation( &cache, grid_2d_a[i][j], 1);
           write_to_file(outfile, ops, stor_size, vaults, grid_2d_a[i][j]);
         } // Endfor sten_order j
       }   // Endfor sten_order i
@@ -1444,16 +1269,7 @@ int main(int argc, char* argv[])
             // Read operation from HOST
             sprintf(ops, "HOST_RD");
             // Central point
-            ret = run_lru_simulation( &cache,
-                                      grid_3d_a[i][j][k],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_3d_a[i][j][k], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults,grid_3d_a[i][j][k]);
@@ -1485,91 +1301,37 @@ int main(int argc, char* argv[])
             // Orders points
             for ( r = 1; r <= sten_order; r++ )
             {
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_a[i-r][j][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_a[i-r][j][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i-r][j][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_a[i+r][j][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_a[i+r][j][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i+r][j][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_a[i][j-r][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j-r][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j-r][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_a[i][j+r][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache,grid_3d_a[i][j+r][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j+r][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_a[i][j][k-r],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k-r], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k-r]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_a[i][j][k+r],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k+r], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k+r]);
@@ -1585,16 +1347,7 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Write operation from HOST
             sprintf(ops, "HOST_WR");
-            ret = run_lru_simulation( &cache,
-                                      grid_3d_b[i][j][k],
-                                      1,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_3d_b[i][j][k], 1);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
@@ -1613,16 +1366,7 @@ int main(int argc, char* argv[])
             // Read operation from HOST
             sprintf(ops, "HOST_RD");
             // Central point
-            ret = run_lru_simulation( &cache,
-                                      grid_3d_b[i][j][k],
-                                      0,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_3d_b[i][j][k], 0);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults,grid_3d_b[i][j][k]);
@@ -1654,91 +1398,37 @@ int main(int argc, char* argv[])
             // Orders points
             for ( r = 1; r <= sten_order; r++ )
             {
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_b[i-r][j][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_b[i-r][j][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i-r][j][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_b[i+r][j][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_b[i+r][j][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i+r][j][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_b[i][j-r][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j-r][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j-r][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_b[i][j+r][k],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j+r][k], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j+r][k]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_b[i][j][k-r],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j][k-r], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j][k-r]);
               }
 
-              ret = run_lru_simulation( &cache,
-                                        grid_3d_b[i][j][k+r],
-                                        0,    //loadstore = 0 load, o/w write
-                                        &dirty_eviction,
-                                        &load_hits,
-                                        &load_misses,
-                                        &store_hits,
-                                        &store_misses,
-                                        &load,
-                                        &store);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j][k+r], 0);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j][k+r]);
@@ -1754,16 +1444,7 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Write operation from HOST
             sprintf(ops, "HOST_WR");
-            ret = run_lru_simulation( &cache,
-                                      grid_3d_a[i][j][k],
-                                      1,    //loadstore = 0 load, o/w write
-                                      &dirty_eviction,
-                                      &load_hits,
-                                      &load_misses,
-                                      &store_hits,
-                                      &store_misses,
-                                      &load,
-                                      &store);
+            ret = run_lru_simulation( &cache, grid_3d_a[i][j][k], 1);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, stor_size, vaults, grid_3d_a[i][j][k]);
@@ -1775,18 +1456,18 @@ int main(int argc, char* argv[])
   }         // Endif dim = 3
 
 
-  hit_rate = (((double)(load_hits + store_hits))/
-              ((double)(load_hits + load_misses + store_hits + store_misses)));
-  miss_rate = (((double)(load_misses + store_misses))/
-              ((double)(load_hits + load_misses + store_hits + store_misses)));
+  hit_rate = (((double)(cache.load_hits + cache.store_hits))/
+              ((double)(cache.load_hits + cache.load_misses + cache.store_hits + cache.store_misses)));
+  miss_rate = (((double)(cache.load_misses + cache.store_misses))/
+              ((double)(cache.load_hits + cache.load_misses + cache.store_hits + cache.store_misses)));
 
   printf("Write cache information!\n");
   write_cache_info( cachelogfile, filename, cache.ways,
                     cache.cache_size, cache.block_size,
-                    load_hits, load_misses,
-                    store_hits, store_misses,
-                    dirty_eviction,
-                    load, store,
+                    cache.load_hits, cache.load_misses,
+                    cache.store_hits, cache.store_misses,
+                    cache.dirty_eviction,
+                    cache.load, cache.store,
                     hit_rate, miss_rate );
   fclose(cachelogfile);
   printf("Finish!\n");
@@ -1931,14 +1612,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
 /* --------------------------------------------- run_lru_simulation */
 int run_lru_simulation( cache_node *cache,
                         uint64_t address,
-                        int loadstore,
-                        uint64_t *dirty_eviction,
-                        uint64_t *load_hits,
-                        uint64_t *load_misses,
-                        uint64_t *store_hits,
-                        uint64_t *store_misses,
-                        uint64_t *load,
-                        uint64_t *store)
+                        int loadstore)
 {
   uint64_t block_addr = (uint64_t)(address >> (uint64_t)log2(cache->block_size) );
   uint64_t index = (uint64_t)( block_addr % cache->sets);
@@ -1961,13 +1635,13 @@ int run_lru_simulation( cache_node *cache,
     if( loadstore == 0 )
     {
       //load
-      *load++;
-      *load_misses++;
+      cache->load++;
+      cache->load_misses++;
     }
     else
     {
-      *store++;
-      *store_misses++;
+      cache->store++;
+      cache->store_misses++;
       dirty[index][0] = 1;
     }
     // Miss!
@@ -1994,12 +1668,12 @@ int run_lru_simulation( cache_node *cache,
         lru[index][i] = 0;
         if( loadstore == 0 )
         {
-          *load++;
-          *load_hits++;
+          cache->load++;
+          cache->load_hits++;
         }
         else{
-          *store++;
-          *store_hits++;
+          cache->store++;
+          cache->store_hits++;
           dirty[index][i] = 1;
         }
         break;
@@ -2026,12 +1700,12 @@ int run_lru_simulation( cache_node *cache,
 
           if( loadstore == 0 )
           {
-            *load++;
-            *load_hits++;
+            cache->load++;
+            cache->load_hits++;
           }
           else{
-            *store++;
-            *store_hits++;
+            cache->store++;
+            cache->store_hits++;
             dirty[index][i] = 1;
           }
           break;
@@ -2060,21 +1734,21 @@ int run_lru_simulation( cache_node *cache,
 
         if( loadstore == 0 )
         {
-          *load++;
-          *load_hits++;
+          cache->load++;
+          cache->load_hits++;
 
           if( dirty[index][lru1] == 1 )
           {
-            *dirty_eviction++;
+            cache->dirty_eviction++;
             dirty[index][lru1] = 0;
           }
         }
         else{
-          *store++;
-          *store_hits++;
+          cache->store++;
+          cache->store_hits++;
           if( dirty[index][lru1] == 1 )
           {
-            *dirty_eviction++;
+            cache->dirty_eviction++;
           }
           else
           {
