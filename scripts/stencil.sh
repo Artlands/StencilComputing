@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GENERATOR=../stencil
-DIM_X=16
+DIM_X=1024
 DIM_Y=0
 DIM_Z=0
 GRID_TYPE=double
