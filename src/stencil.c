@@ -25,9 +25,10 @@ uint64_t oldestAge = 0;
 uint64_t indexOfOldest = 0;
 uint64_t nextEntryIndex = 0;
 
-int **tag_field;
-int **valid_field;
-int **nru_reference;
+int *valid;
+int **tag;
+int **lru;
+int **dirty;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 
@@ -51,7 +52,7 @@ extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
                       uint64_t hits, uint64_t misses,
                       double hit_rate, double miss_rate );
 
-int run_nru_simulation( cache_node *cache, uint64_t address );
+int run_lru_simulation( cache_node *cache, uint64_t address );
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
@@ -129,13 +130,6 @@ int main(int argc, char* argv[])
   int cache_size;                     // specified by user
   int num_block;
 
-  // /* Cache records*/
-  // uint64_t hits = 0;
-  // uint64_t misses = 0;
-  // uint64_t read_num = 0;
-  // uint64_t write_num = 0;
-  // double hit_rate;
-  // double miss_rate;
 /*----------------------------------------------------------------------------*/
 
   while( (ret = getopt( argc, argv, "x:y:z:t:T:O:C:p:c:b:v:a:h")) != -1 )
@@ -191,7 +185,7 @@ int main(int argc, char* argv[])
         printf(" -c <HMC capacity: 4, 8>");
         printf(" -b <HMC blocksize: 32, 64, 128, 256>");
         printf(" -v <HMC vaults: 16, 32>");
-        printf(" -a <Cache size: 32KB, 4MB, 8MB>");
+        printf(" -a <Cache size: 32, 4096, 8192 in KB>");
         printf(" h ...print help\n");
         return 0;
         break;
@@ -447,6 +441,7 @@ int main(int argc, char* argv[])
     randframe = geneRandom(-1);
   }
 /*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
   /*
    * Initialize the cache
    *
@@ -455,38 +450,36 @@ int main(int argc, char* argv[])
   cache_node cache = {.cache_size = cache_size,
                       .block_size = BLOCKSIZE,
                       .ways = WAYS,
-                      .sets = num_block/WAYS};
+                      .sets = num_block/WAYS
+                      .hits = 0,
+                      .misses = 0};
 
 #ifdef DEBUG
   printf("# Blocks: %d\n", num_block);
 #endif
 
-  tag_field = (int **) malloc( sizeof( int *) * cache.sets);
-  valid_field  = (int **) malloc( sizeof( int *) * cache.sets);
-  nru_reference = (int **) malloc( sizeof( int *) * cache.sets);
+  valid  = (int *) malloc( sizeof( int ) * cache.sets);
+  tag = (int **) malloc( sizeof( int *) * cache.sets);
+  lru = (int **) malloc( sizeof( int *) * cache.sets);
+  // dirty = (int **) malloc( sizeof( int *) * cache.sets);
 
-  if( tag_field == NULL || valid_field == NULL || nru_reference == NULL )
+  for( i = 0; i < cache.sets; i++ )
   {
-    printf("ERROR: Out of memory\n");
-    return -1;
+    tag[i] = (int *) malloc( sizeof( int ) * cache.ways);
+    lru[i] = (int *) malloc( sizeof( int ) * cache.ways);
+    // dirty[i] = (int *) malloc( sizeof( int ) * cache.ways);
   }
 
   printf("Initialize Cache...\n");
   for( i = 0; i < cache.sets; i++ )
   {
-    tag_field[i] = (int *) malloc( sizeof( int ) * cache.ways);
-    valid_field[i] = (int *) malloc( sizeof( int ) * cache.ways);
-    nru_reference[i] = (int *) malloc( sizeof( int ) * cache.ways);
-  }
-
-  for( i = 0; i < cache.sets; i++ )
-  {
     for( j = 0; j < cache.ways; j++ )
     {
-      tag_field[i][j] = 0;
-      valid_field[i][j] = 0;
-      nru_reference[i][j] = 0;
+      tag[i][j] = -1;
+      lru[i][j] = -1;
+      // dirty[i][j] = 0;
     }
+    valid[i] = 0;
   }
 /*----------------------------------------------------------------------------*/
 
@@ -505,6 +498,7 @@ int main(int argc, char* argv[])
   /* Allocate contiguous memory space for storing stencil grid addresses*/
   data_cntr_a = (uint64_t *) malloc( sizeof( uint64_t ) * cntr_size);
   data_cntr_b = (uint64_t *) malloc( sizeof( uint64_t ) * cntr_size);
+
   if( data_cntr_a == NULL || data_cntr_b == NULL)
   {
     printf("Error: Out of memory\n");
@@ -685,7 +679,7 @@ int main(int argc, char* argv[])
                     cntr_size, sten_order, sten_coeff, data_type);
     fclose(tracelogfile);
 
-    // Read grid a, wirte grid b
+    // Read from grid a, wirte to grid b
     for( i = 1; i < (dim_x-1); i++ )
     {
       for( j = 1; j < (dim_y-1); j++ )
@@ -892,7 +886,7 @@ int main(int argc, char* argv[])
           // Read operation from HOST
           sprintf(ops, "HOST_RD");
 
-          ret = run_nru_simulation( &cache, grid_1d_a[i] );
+          ret = run_lru_simulation( &cache, grid_1d_a[i] );
           if( ret == 2 )
           {
             // Central point
@@ -932,13 +926,13 @@ int main(int argc, char* argv[])
           // Orders points
           for( r = 1; r <= sten_order; r++)
           {
-            ret = run_nru_simulation( &cache, grid_1d_a[i-r] );
-            if( ret == 2 )
+            ret = run_lru_simulation( &cache, grid_1d_a[i-r] );
+            if( ret == -1 )
             {
               write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
             }
-            ret = run_nru_simulation( &cache, grid_1d_a[i+r] );
-            if( ret == 2 )
+            ret = run_lru_simulation( &cache, grid_1d_a[i+r] );
+            if( ret == -1 )
             {
               write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
             }
@@ -953,93 +947,12 @@ int main(int argc, char* argv[])
           /*
            * Write operation from HOST
            * Length always stor_size
-           *
+           * Allways record write operation 
            */
           sprintf(ops, "HOST_WR");
-          ret = run_nru_simulation( &cache, grid_1d_b[i] );
-          if( ret == 2 )
-          {
-            write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
-          }
+          write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
         }
-        //---------------------------------------------------------------------
-        // // Read grid a, wirte grid b
-        // for( i = sten_order; i < (dim_x-sten_order); i++ )
-        // {
-        //   memset(ops, 0, sizeof(ops));
-        //   // Read operation from HOST
-        //   sprintf(ops, "HOST_RD");
-        //
-        //   ret = run_nru_simulation( &cache, grid_1d_b[i] );
-        //   if( ret == 2 )
-        //   {
-        //     // Central point
-        //     write_to_file(outfile, ops, num_bytes, vaults, grid_1d_b[i]);
-        //   }
-        //
-        // #ifdef DEBUG
-        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, vaults, grid_1d_a[i]);
-        // #endif
-        //
-        //   if( flag == 1)
-        //   {
-        //     if( getpimsid( &procid, grid_1d_a[i], shiftamt, vaults )!= 0 )
-        //     {
-        //       printf("ERROR: Failed to retrive PIMS id\n");
-        //       goto cleanup;
-        //     }
-        //     memset(ops, 0, sizeof(ops));
-        //     /*
-        //      * Read operation from PIMS
-        //      * Length always stor_size
-        //      *
-        //      */
-        //     sprintf(ops, "PIMS_RD");
-        //     write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
-        // #ifdef DEBUG
-        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i]);
-        // #endif
-        //   }
-        //   else
-        //   {
-        //     memset(ops, 0, sizeof(ops));
-        //     // Read operation from HOST
-        //     sprintf(ops, "HOST_RD");
-        //   }
-        //
-        //   // Orders points
-        //   for( r = 1; r <= sten_order; r++)
-        //   {
-        //     ret = run_nru_simulation( &cache, grid_1d_b[i-r] );
-        //     if( ret == 2 )
-        //     {
-        //       write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i-r]);
-        //     }
-        //     ret = run_nru_simulation( &cache, grid_1d_b[i+r] );
-        //     if( ret == 2 )
-        //     {
-        //       write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i+r]);
-        //     }
-        //
-        // #ifdef DEBUG
-        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i-r]);
-        //   // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i+r]);
-        // #endif
-        //   }
-        //
-        //   memset(ops, 0, sizeof(ops));
-        //   /*
-        //    * Write operation from HOST
-        //    * Length always stor_size
-        //    *
-        //    */
-        //   sprintf(ops, "HOST_WR");
-        //   ret = run_nru_simulation( &cache, grid_1d_a[i] );
-        //   if( ret == 2 )
-        //   {
-        //     write_to_file(outfile, ops, stor_size, vaults, grid_1d_a[i]);
-        //   }
-        // }
+
         //--------------------------------------------------------------------
         break;
       case 2:
@@ -1180,14 +1093,15 @@ cleanup:
 
   for( i = 0; i < cache.sets; i++ )
   {
-    free(tag_field[i]);
-    free(valid_field[i]);
-    free(nru_reference[i]);
+    free(tag[i]);
+    free(lru[i]);
+    free(dirty[i]);
   }
 
-  free(tag_field);
-  free(valid_field);
-  free(nru_reference);
+  free(tag);
+  free(lru);
+  free(dirty);
+  free(valid);
 
   switch(dim)
   {
@@ -1302,77 +1216,92 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
 }
 /* EOF */
 
-/* --------------------------------------------- RUN_NRU_SIMULATION */
-int run_nru_simulation( cache_node *cache, uint64_t address )
+/* --------------------------------------------- run_lru_simulation */
+int run_lru_simulation( cache_node *cache, uint64_t address )
 {
   uint64_t block_addr = (uint64_t)(address >> (uint64_t)log2(cache->block_size) );
   uint64_t index = (uint64_t)( block_addr % cache->sets);
   uint64_t tag = (uint64_t)( block_addr >> (uint64_t)log2(cache->sets));
-  /* Flag is set to 1 when address is processed */
-  int processed_flag = 0;
+
+  int hit_flag;
+  int found;
   int i;
+  int j;
+  int lru1;
+  int result;         // -1 means miss, 1 means hit
 
-  /* check for hit in appropriate set */
-  for( i = 0; i < cache->ways; i++ )
+  // Compare tag
+  if( valid[index] == 0 )
   {
-    /* If cache space is occupied and tag matches then Hit*/
-    if( (valid_field[index][i]) && (tag_field[index][i] == tag) )
-    {
-      cache->hits ++;
-      nru_reference[index][i] = 1;
-      processed_flag = 1;
-#ifdef DEBUG
-      printf("Hit!\n");
-#endif
-      return 1;
-    }
-  }
-  /* If not a hit then process miss */
-  if( processed_flag == 0 )
-  {
+    valid[index] = 1;
+    tag[index][0] = tag;
+    lru[index][0] = 0;
     cache->misses ++;
-
-#ifdef DEBUG
-      printf("Miss!\n");
-#endif
-
-    /* First look for an unused way in the proper set */
-    for( i = 0; i < cache->ways; i++ )
+    result = -1;
+  }
+  else if( valid[index] == 1 )
+  {
+    hit_flag = 0;
+    for( i = 0; i < cache->ways; i ++ )
     {
-      if( valid_field[index][i] == 0 )
+      if( tag[index][i] == tag )
       {
-        tag_field[index][i] = tag;
-        valid_field[index][i] = 1;
-        nru_reference[index][i] = 1;
-        processed_flag = 1;
-        return 2;
+        hit_flag = 1;
+        cache->hit ++;
+        result = 1;
+        for( j = 0; j < cache->ways; j ++)
+        {
+          if( (lru[index][j] != -1) && (lru[index][j] < lru[index][i]) )
+          {
+            lru[index][j] = lru[index][j] + 1;
+          }
+        }
+        lru[index][i] = 0;
+        break;
       }
     }
-    /* if no unused way, replace first way in appropriate set where nru = 0 */
-    if( processed_flag == 0 )
+    if( hit_flag == 0 )
     {
-      for( i = 1; i < cache->ways; i++ )
+      cache->misses ++;
+      result = -1;
+      found = 0;
+      for( i = 0; i < cache->ways; i++ )
       {
-        if(nru_reference[index][i] == 0)
+        if( lru[index][i] == -1 )
         {
-          tag_field[index][i] = tag;
-          valid_field[index][i] = 1;
-          nru_reference[index][i] = 1;
-          processed_flag = 1;
-          return 2;
+          found = 1;
+          tag[index][i] = tag;
+          // update lru
+          for( j = 0; j < i; j++ )
+          {
+            lru[index][j] = lru[index][j] + 1;
+          }
+          lru[index][i] = 0;
+          break;
         }
       }
-      if( processed_flag == 0)
+      if( found == 0 )
       {
-        tag_field[index][0] = tag;
-        valid_field[index][0] = 1;
-        for( i = 1; i < cache->ways; i++)
+        //all blocks are in use
+        // replace the highest lru
+        lru1 = 0;
+        for( j = 0; j < cache->sets; j++ )
         {
-          nru_reference[index][i] = 0;
+          if( lru[index][j] == (cache->sets - 1) )
+          {
+            lru1 = j;
+            break;
+          }
         }
-        return 2;
+        tag[index][lru1] = tag;
+
+        for( j = 0; j < cache->sets; j++ )
+        {
+          lru[index][j] = lru[index][j] + 1;
+        }
+        lru[index][lru1] = 0;
       }
     }
   }
-  return 0;
+  return result;
 }
