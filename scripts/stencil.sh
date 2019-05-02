@@ -1,9 +1,9 @@
 #!/bin/bash
 
 GENERATOR=../stencil
-DIM_X=1048576
-DIM_Y=0
-DIM_Z=0
+DIM_X=64
+DIM_Y=64
+DIM_Z=64
 GRID_TYPE=double
 # GRID_TYPE=Integer
 STEN_TYPE=0
