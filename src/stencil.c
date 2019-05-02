@@ -1156,8 +1156,14 @@ cleanup:
   {
     fclose(outfile);
   }
-  fclose(tracelogfile);
-  fclose(cachelogfile);
+  if( tracelogfile != NULL )
+  {
+    fclose(tracelogfile);
+  }
+  if( cachelogfile != NULL )
+  {
+    fclose(cachelogfile);
+  }
 
   /* Deallocate memory */
   free(page_table);
