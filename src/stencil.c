@@ -1072,15 +1072,16 @@ int main(int argc, char* argv[])
     }
 
   }
-  printf("Finish!\n");
+
   cache.hit_rate = (((double)(cache.hits))/((double)( cache.hits + cache.misses )));
   cache.miss_rate = (((double)(cache.misses))/((double)( cache.hits + cache.misses )));
 
+  printf("Write cache information!\n");
   write_cache_info( cachelogfile, filename, cache.ways,
                     cache.cache_size, cache.block_size,
                     cache.hits, cache.misses,
                     cache.hit_rate, cache.miss_rate );
-
+ printf("Finish!\n");
 cleanup:
   /* Close file */
   if( outfile != NULL )
@@ -1095,12 +1096,12 @@ cleanup:
   {
     free(tag[i]);
     free(lru[i]);
-    free(dirty[i]);
+    // free(dirty[i]);
   }
 
   free(tag);
   free(lru);
-  free(dirty);
+  // free(dirty);
   free(valid);
 
   switch(dim)
