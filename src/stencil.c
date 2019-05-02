@@ -947,7 +947,7 @@ int main(int argc, char* argv[])
           /*
            * Write operation from HOST
            * Length always stor_size
-           * Allways record write operation 
+           * Allways record write operation
            */
           sprintf(ops, "HOST_WR");
           write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
@@ -1221,7 +1221,7 @@ int run_lru_simulation( cache_node *cache, uint64_t address )
 {
   uint64_t block_addr = (uint64_t)(address >> (uint64_t)log2(cache->block_size) );
   uint64_t index = (uint64_t)( block_addr % cache->sets);
-  uint64_t tag = (uint64_t)( block_addr >> (uint64_t)log2(cache->sets));
+  uint64_t tag_val = (uint64_t)( block_addr >> (uint64_t)log2(cache->sets));
 
   int hit_flag;
   int found;
@@ -1234,7 +1234,7 @@ int run_lru_simulation( cache_node *cache, uint64_t address )
   if( valid[index] == 0 )
   {
     valid[index] = 1;
-    tag[index][0] = tag;
+    tag[index][0] = tag_val;
     lru[index][0] = 0;
     cache->misses ++;
     result = -1;
@@ -1244,10 +1244,10 @@ int run_lru_simulation( cache_node *cache, uint64_t address )
     hit_flag = 0;
     for( i = 0; i < cache->ways; i ++ )
     {
-      if( tag[index][i] == tag )
+      if( tag[index][i] == tag_val )
       {
         hit_flag = 1;
-        cache->hit ++;
+        cache->hits ++;
         result = 1;
         for( j = 0; j < cache->ways; j ++)
         {
@@ -1270,7 +1270,7 @@ int run_lru_simulation( cache_node *cache, uint64_t address )
         if( lru[index][i] == -1 )
         {
           found = 1;
-          tag[index][i] = tag;
+          tag[index][i] = tag_val;
           // update lru
           for( j = 0; j < i; j++ )
           {
@@ -1293,7 +1293,7 @@ int run_lru_simulation( cache_node *cache, uint64_t address )
             break;
           }
         }
-        tag[index][lru1] = tag;
+        tag[index][lru1] = tag_val;
 
         for( j = 0; j < cache->sets; j++ )
         {
