@@ -887,7 +887,7 @@ int main(int argc, char* argv[])
           sprintf(ops, "HOST_RD");
 
           ret = run_lru_simulation( &cache, grid_1d_a[i] );
-          if( ret == 2 )
+          if( ret == -1 )
           {
             // Central point
             write_to_file(outfile, ops, num_bytes, vaults, grid_1d_a[i]);
@@ -964,8 +964,14 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
             sprintf(ops, "HOST_RD");
+
             // Central point
-            write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
+            ret = run_lru_simulation( &cache, grid_2d_a[i][j] );
+            if( ret == -1 )
+            {
+              write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
+            }
+
 
             if( flag == 1 )
             {
@@ -993,10 +999,34 @@ int main(int argc, char* argv[])
             // Orders points
             for( r = 1; r <= sten_order; r++ )
             {
-              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-r][j]);
-              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i+r][j]);
-              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j-r]);
-              write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j+r]);
+              ret = run_lru_simulation( &cache,grid_2d_a[i-r][j] );
+              if( ret == -1 )
+              {
+                write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i-r][j]);
+              }
+
+              ret = run_lru_simulation( &cache, grid_2d_a[i+r][j] );
+              if( ret == -1 )
+              {
+                write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i+r][j]);
+              }
+
+              ret = run_lru_simulation( &cache, grid_2d_a[i][j-r] );
+              if( ret == -1 )
+              {
+                write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j-r]);
+              }
+
+              ret = run_lru_simulation( &cache, grid_2d_a[i][j+r] );
+              if( ret == -1 )
+              {
+                write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j+r]);
+              }
+
+              // write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i-r][j]);
+              // write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i+r][j]);
+              // write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j-r]);
+              // write_to_file(outfile, ops, stor_size, procid, grid_2d_a[i][j+r]);
             }
 
             memset(ops, 0, sizeof(ops));
@@ -1022,7 +1052,11 @@ int main(int argc, char* argv[])
               // Read operation from HOST
               sprintf(ops, "HOST_RD");
               // Central point
-              write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k]);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k] );
+              if( ret == -1 )
+              {
+                write_to_file(outfile, ops, num_bytes, vaults,grid_3d_a[i][j][k]);
+              }
 
               if( flag == 1)
               {
@@ -1050,12 +1084,47 @@ int main(int argc, char* argv[])
               // Orders points
               for ( r = 1; r <= sten_order; r++ )
               {
-                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
-                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
-                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j-r][k]);
-                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
-                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
-                write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
+                ret = run_lru_simulation( &cache, grid_3d_a[i-r][j][k] );
+                if( ret == -1 )
+                {
+                  write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i-r][j][k]);
+                }
+
+                ret = run_lru_simulation( &cache, grid_3d_a[i+r][j][k] );
+                if( ret == -1 )
+                {
+                  write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i+r][j][k]);
+                }
+
+                ret = run_lru_simulation( &cache, grid_3d_a[i][j-r][k] );
+                if( ret == -1 )
+                {
+                  write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j-r][k]);
+                }
+
+                ret = run_lru_simulation( &cache, grid_3d_a[i][j+r][k] );
+                if( ret == -1 )
+                {
+                  write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j+r][k]);
+                }
+
+                ret = run_lru_simulation( &cache, grid_3d_a[i][j][k-r] );
+                if( ret == -1 )
+                {
+                  write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k-r]);
+                }
+
+                ret = run_lru_simulation( &cache, grid_3d_a[i][j][k+r] );
+                if( ret == -1 )
+                {
+                  write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k+r]);
+                }
+                // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
+                // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
+                // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j-r][k]);
+                // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
+                // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
+                // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
               }
 
               memset(ops, 0, sizeof(ops));
