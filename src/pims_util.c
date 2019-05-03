@@ -191,14 +191,13 @@ extern void write_sten_info(FILE* fp, char* filename, int dim,
   switch(dim)
   {
     case 1:
-      inner = dim_x - sten_order * 2;
+      inner = dim_x;
       break;
     case 2:
-      inner = (dim_x - sten_order * 2) * (dim_y - sten_order * 2);
+      inner = dim_x * dim_y;
       break;
     case 3:
-      inner = (dim_x - sten_order * 2) * (dim_y - sten_order * 2)
-            * (dim_z - sten_order * 2);
+      inner = dim_x * dim_y * dim_z;
       break;
     default:
       break;
@@ -206,8 +205,8 @@ extern void write_sten_info(FILE* fp, char* filename, int dim,
   fprintf(fp,"# Trace file path:       %s\n", filename);
   fprintf(fp,"# Stencil Dimension:    %u, X: %d, Y: %d, Z: %d\n",
           dim, dim_x, dim_y, dim_z);
-  fprintf(fp,"# Stencil Grid Size:    %u\n", cntr_size);
-  fprintf(fp,"# Stencil Inner Size:   %u\n", inner);
+  fprintf(fp,"# Stencil Grid Size:    %u\n", inner);
+  fprintf(fp,"# Stencil Outer Size:   %u\n", cntr_size);
   fprintf(fp,"# Stencil Order:        %d\n", sten_order);
   fprintf(fp,"# Stencil Coefficients: %d\n", sten_coeff);
   fprintf(fp,"# Stencil Data Type:    %s\n", data_type);

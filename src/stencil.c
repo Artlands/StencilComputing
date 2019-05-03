@@ -332,17 +332,20 @@ int main(int argc, char* argv[])
   if( dim_y == 0 )
   {
     dim = 1;
-    cntr_size = (uint32_t)dim_x;
+    cntr_size = (uint32_t)(dim_x + sten_order * 2);
   }
   else if( dim_z == 0 )
   {
     dim = 2;
-    cntr_size = (uint32_t)((uint32_t)dim_x * (uint32_t)dim_y);
+    cntr_size = (uint32_t)((uint32_t)(dim_x + sten_order * 2)
+                         * (uint32_t)(dim_y + sten_order * 2));
   }
   else
   {
     dim = 3;
-    cntr_size = (uint32_t)((uint32_t)dim_x * (uint32_t)dim_y * (uint32_t)dim_z);
+    cntr_size = (uint32_t)((uint32_t)(dim_x + sten_order * 2)
+                         * (uint32_t)(dim_y + sten_order * 2)
+                         * (uint32_t)(dim_z + sten_order * 2));
   }
 
 #ifdef DEBUGSET
@@ -556,8 +559,8 @@ int main(int argc, char* argv[])
       grid_1d_b = data_cntr_b;
       break;
     case 2:
-      grid_2d_a = (uint64_t **) malloc( sizeof(uint64_t *) * dim_x );
-      grid_2d_b = (uint64_t **) malloc( sizeof(uint64_t *) * dim_x );
+      grid_2d_a = (uint64_t **) malloc( sizeof(uint64_t *) * (dim_x + sten_order * 2) );
+      grid_2d_b = (uint64_t **) malloc( sizeof(uint64_t *) * (dim_x + sten_order * 2) );
       if( grid_2d_a == NULL || grid_2d_b == NULL )
       {
         printf("Error: Out of memory\n");
@@ -565,7 +568,7 @@ int main(int argc, char* argv[])
         free(data_cntr_b);
         return -1;
       }
-      for(i = 0; i < dim_x; i++)
+      for(i = 0; i < (dim_x + sten_order * 2); i++)
       {
         idx = i * dim_y;
         grid_2d_a[i] = &data_cntr_a[idx];
@@ -573,8 +576,8 @@ int main(int argc, char* argv[])
       }
       break;
     case 3:
-      grid_3d_a = (uint64_t ***) malloc( sizeof(uint64_t **) * dim_x );
-      grid_3d_b = (uint64_t ***) malloc( sizeof(uint64_t **) * dim_x );
+      grid_3d_a = (uint64_t ***) malloc( sizeof(uint64_t **) * (dim_x + sten_order * 2) );
+      grid_3d_b = (uint64_t ***) malloc( sizeof(uint64_t **) * (dim_x + sten_order * 2) );
       if( grid_3d_a == NULL ||  grid_3d_b == NULL )
       {
         printf("Error: Out of memory\n");
@@ -582,13 +585,13 @@ int main(int argc, char* argv[])
         free(data_cntr_b);
         return -1;
       }
-      for(i = 0; i < dim_x; i++)
+      for(i = 0; i < (dim_x + sten_order * 2); i++)
       {
-        grid_3d_a[i] = (uint64_t **) malloc( sizeof(uint64_t *) * dim_y);
-        grid_3d_b[i] = (uint64_t **) malloc( sizeof(uint64_t *) * dim_y);
-        for(j = 0; j < dim_y; j++)
+        grid_3d_a[i] = (uint64_t **) malloc( sizeof(uint64_t *) * (dim_y + sten_order * 2) );
+        grid_3d_b[i] = (uint64_t **) malloc( sizeof(uint64_t *) * (dim_y + sten_order * 2) );
+        for(j = 0; j < (dim_y + sten_order * 2); j++)
         {
-          idx = dim_z * (j + dim_y * i);
+          idx = (dim_z + sten_order * 2) * (j + (dim_y + sten_order * 2) * i);
           grid_3d_a[i][j] = &data_cntr_a[idx];
           grid_3d_b[i][j] = &data_cntr_b[idx];
         }
@@ -610,7 +613,7 @@ int main(int argc, char* argv[])
   switch(dim)
   {
     case 1:
-      for ( i = 0; i < dim_x; i++ )
+      for ( i = 0; i < (dim_x + sten_order * 2); i++ )
       {
         virtual_addr_a = (uint64_t)( base_a + ((uint64_t)(i) * stor_size));
         virtual_addr_b = (uint64_t)( base_b + ((uint64_t)(i) * stor_size));
@@ -631,9 +634,9 @@ int main(int argc, char* argv[])
       }
       break;
     case 2:
-      for( i = 0; i < dim_x; i++)
+      for( i = 0; i < (dim_x + sten_order * 2); i++)
       {
-        for( j = 0; j < dim_y; j++)
+        for( j = 0; j < (dim_y + sten_order * 2); j++)
         {
           virtual_addr_a = (uint64_t)( base_a + (uint64_t)((j + i * dim_y)
                                         * stor_size) );
@@ -657,11 +660,11 @@ int main(int argc, char* argv[])
       }
       break;
     case 3:
-      for( i = 0; i < dim_x; i++)
+      for( i = 0; i < (dim_x + sten_order * 2); i++)
       {
-        for( j = 0; j < dim_y; j++)
+        for( j = 0; j < (dim_y + sten_order * 2); j++)
         {
-          for( k = 0; k < dim_z; k++)
+          for( k = 0; k < (dim_z + sten_order * 2); k++)
           {
             virtual_addr_a = (uint64_t)( base_a + (uint64_t)((k + (j + i
                                              * dim_y) * dim_z) * stor_size) );
@@ -930,7 +933,7 @@ int main(int argc, char* argv[])
   {
     for( n = 0; n < iteration; n++ ){
       // Read grid a, wirte grid b----------------------------------------------
-      for( i = sten_order; i < (dim_x-sten_order); i++ )
+      for( i = sten_order; i < (dim_x + sten_order); i++ )
       {
         memset(ops, 0, sizeof(ops));
         // Read operation from HOST
@@ -1005,7 +1008,7 @@ int main(int argc, char* argv[])
         total_HOST_MWR ++;
       }
       // Read grid b, wirte grid a----------------------------------------------
-      for( i = sten_order; i < (dim_x-sten_order); i++ )
+      for( i = sten_order; i < (dim_x+sten_order); i++ )
       {
         memset(ops, 0, sizeof(ops));
         // Read operation from HOST
@@ -1061,6 +1064,8 @@ int main(int argc, char* argv[])
             write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i-r]);
             total_HOST_MRD ++;
           }
+
+          total_HOST_REQ ++;
           ret = run_lru_simulation( &cache, grid_1d_b[i+r]);
           if( ret == -1 )
           {
@@ -1087,9 +1092,9 @@ int main(int argc, char* argv[])
     for( n = 0; n < iteration; n++ )
     {
       // Read grid a, wirte grid b----------------------------------------------
-      for( i = sten_order; i < (dim_x-sten_order); i++ )
+      for( i = sten_order; i < (dim_x+sten_order); i++ )
       {
-        for( j = sten_order; j < (dim_y-sten_order); j++ )
+        for( j = sten_order; j < (dim_y+sten_order); j++ )
         {
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
@@ -1138,6 +1143,7 @@ int main(int argc, char* argv[])
               total_HOST_MRD ++;
             }
 
+            total_HOST_REQ ++;
             ret = run_lru_simulation( &cache, grid_2d_a[i+r][j]);
             if( ret == -1 )
             {
@@ -1145,6 +1151,7 @@ int main(int argc, char* argv[])
               total_HOST_MRD ++;
             }
 
+            total_HOST_REQ ++;
             ret = run_lru_simulation( &cache, grid_2d_a[i][j-r]);
             if( ret == -1 )
             {
@@ -1152,6 +1159,7 @@ int main(int argc, char* argv[])
               total_HOST_MRD ++;
             }
 
+            total_HOST_REQ ++;
             ret = run_lru_simulation( &cache, grid_2d_a[i][j+r]);
             if( ret == -1 )
             {
@@ -1175,9 +1183,9 @@ int main(int argc, char* argv[])
       }   //Endfor sten_order i
 
       // Read grid b, wirte grid a----------------------------------------------
-      for( i = sten_order; i < (dim_x-sten_order); i++ )
+      for( i = sten_order; i < (dim_x+sten_order); i++ )
       {
-        for( j = sten_order; j < (dim_y-sten_order); j++ )
+        for( j = sten_order; j < (dim_y+sten_order); j++ )
         {
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
@@ -1227,6 +1235,7 @@ int main(int argc, char* argv[])
               total_HOST_MRD ++;
             }
 
+            total_HOST_REQ ++;
             ret = run_lru_simulation( &cache, grid_2d_a[i+r][j]);
             if( ret == -1 )
             {
@@ -1234,6 +1243,7 @@ int main(int argc, char* argv[])
               total_HOST_MRD ++;
             }
 
+            total_HOST_REQ ++;
             ret = run_lru_simulation( &cache, grid_2d_b[i][j-r]);
             if( ret == -1 )
             {
@@ -1241,6 +1251,7 @@ int main(int argc, char* argv[])
               total_HOST_MRD ++;
             }
 
+            total_HOST_REQ ++;
             ret = run_lru_simulation( &cache, grid_2d_b[i][j+r]);
             if( ret == -1 )
             {
@@ -1269,11 +1280,11 @@ int main(int argc, char* argv[])
     for( n = 0; n < iteration; n++ )
     {
       // Read grid a, wirte grid b----------------------------------------------
-      for( i = sten_order; i < (dim_x-sten_order); i++ )
+      for( i = sten_order; i < (dim_x+sten_order); i++ )
       {
-        for( j = sten_order; j < (dim_y-sten_order); j++)
+        for( j = sten_order; j < (dim_y+sten_order); j++)
         {
-          for( k = sten_order; k < (dim_z-sten_order); k++)
+          for( k = sten_order; k < (dim_z+sten_order); k++)
           {
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
@@ -1321,6 +1332,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_a[i+r][j][k]);
               if( ret == -1 )
               {
@@ -1328,6 +1340,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_a[i][j-r][k]);
               if( ret == -1 )
               {
@@ -1335,6 +1348,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache,grid_3d_a[i][j+r][k]);
               if( ret == -1 )
               {
@@ -1342,6 +1356,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_a[i][j][k-r]);
               if( ret == -1 )
               {
@@ -1349,6 +1364,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_a[i][j][k+r]);
               if( ret == -1 )
               {
@@ -1374,11 +1390,11 @@ int main(int argc, char* argv[])
         }   //Endfor sten_order j
       }     //Endfor sten_order i
       // Read grid b, wirte grid a----------------------------------------------
-      for( i = sten_order; i < (dim_x-sten_order); i++ )
+      for( i = sten_order; i < (dim_x+sten_order); i++ )
       {
-        for( j = sten_order; j < (dim_y-sten_order); j++)
+        for( j = sten_order; j < (dim_y+sten_order); j++)
         {
-          for( k = sten_order; k < (dim_z-sten_order); k++)
+          for( k = sten_order; k < (dim_z+sten_order); k++)
           {
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
@@ -1426,6 +1442,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_b[i+r][j][k]);
               if( ret == -1 )
               {
@@ -1433,6 +1450,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_b[i][j-r][k]);
               if( ret == -1 )
               {
@@ -1440,6 +1458,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_b[i][j+r][k]);
               if( ret == -1 )
               {
@@ -1447,6 +1466,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_b[i][j][k-r]);
               if( ret == -1 )
               {
@@ -1454,6 +1474,7 @@ int main(int argc, char* argv[])
                 total_HOST_MRD ++;
               }
 
+              total_HOST_REQ ++;
               ret = run_lru_simulation( &cache, grid_3d_b[i][j][k+r]);
               if( ret == -1 )
               {
