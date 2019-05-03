@@ -20,6 +20,9 @@
 #include "pims.h"
 
 // #define DEBUG
+// #define DEBUGCA
+// #define DEBUGVP
+// #define DEBUGSET
 
 /* Global variables */
 uint64_t pta_miss = 0;
@@ -30,7 +33,7 @@ uint64_t nextEntryIndex = 0;
 int *valid;
 int **tag;
 int **lru;
-int **dirty;
+// int **dirty;
 
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 
@@ -51,26 +54,13 @@ extern void write_sten_info(FILE* fp, char* filename, int dim,
 // Write cache information
 extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
                        uint64_t cache_size, uint64_t block_size,
-                       uint64_t load_hits, uint64_t load_misses,
-                       uint64_t store_hits, uint64_t store_misses,
-                       uint64_t load, uint64_t store,
-                       uint64_t dirty_eviction,
+                       uint64_t total_HOST_REQ,
+                       uint64_t total_HOST_MRD,
+                       uint64_t total_HOST_MWR,
                        double hit_rate, double miss_rate );
 
 int run_lru_simulation( cache_node *cache,
-                        uint64_t address,
-                        int loadstore);
-
-// int run_lru_simulation( cache_node *cache,
-//                         uint64_t address,
-//                         int loadstore,
-//                         uint64_t dirty_eviction,
-//                         uint64_t load_hits,
-//                         uint64_t load_misses,
-//                         uint64_t store_hits,
-//                         uint64_t store_misses,
-//                         uint64_t load,
-//                         uint64_t store);
+                        uint64_t address);
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
@@ -123,6 +113,13 @@ int main(int argc, char* argv[])
   char tracelog[1024];
   char ops[10];
   int num_bytes = 1;            // number of bytes for each ops
+  uint64_t total_HOST_REQ = 0;  // host total requests
+  uint64_t total_PIMS_REQ = 0;  // pims total requests
+  uint64_t total_HOST_MRD = 0;  // host memory read requests
+  uint64_t total_HOST_MWR = 0;  // host memory write requests
+  uint64_t total_PIMS_MRD = 0;  // pims memory read requests
+  uint64_t total_PIMS_MWR = 0;  // pims memory write requests
+  uint64_t total_PIMS_INM = 0;  // pims in memory requests
 
   /* MALLOC MEMORY*/
   uint64_t *data_cntr_a;             // data container
@@ -222,7 +219,7 @@ int main(int argc, char* argv[])
     }
   }
 
-#ifdef DEBUG
+#ifdef DEBUGSET
     printf("Dimension X is %" PRId32"\n", dim_x);
     printf("Dimension Y is %" PRId32"\n", dim_y);
     printf("Dimension Z is %" PRId32"\n", dim_z);
@@ -348,7 +345,7 @@ int main(int argc, char* argv[])
     cntr_size = (uint32_t)((uint32_t)dim_x * (uint32_t)dim_y * (uint32_t)dim_z);
   }
 
-#ifdef DEBUG
+#ifdef DEBUGSET
         printf("%s%d\n", "Grid Dimension: ", dim);
         printf("%s%u\n", "Grid size: ", cntr_size);
 #endif
@@ -456,7 +453,7 @@ int main(int argc, char* argv[])
   entries = memSize / page_size;
   randframe = geneRandom((int)entries); // 2^21 -1
 
-#ifdef DEBUG
+#ifdef DEBUGSET
   printf("%s%d\n", "Capacity: ", capacity);
   printf("%s%llu\n", "Memory: ", memSize);
   printf("%s%llu\n", "Entries: ", entries);
@@ -488,8 +485,8 @@ int main(int argc, char* argv[])
    * Initialize the cache
    *
    */
-  num_block = cache_size/BLOCKSIZE;
-  cache_node cache = {.cache_size = cache_size,
+  num_block = (cache_size * 1024)/BLOCKSIZE;
+  cache_node cache = {.cache_size = cache_size * 1024,
                       .block_size = BLOCKSIZE,
                       .ways = WAYS,
                       .sets = num_block/WAYS,
@@ -501,20 +498,20 @@ int main(int argc, char* argv[])
                       .load = 0,
                       .store = 0};
 
-#ifdef DEBUG
+#ifdef DEBUGSET
   printf("# Blocks: %d\n", num_block);
 #endif
 
   valid  = (int *) malloc( sizeof( int ) * cache.sets);
   tag = (int **) malloc( sizeof( int *) * cache.sets);
   lru = (int **) malloc( sizeof( int *) * cache.sets);
-  dirty = (int **) malloc( sizeof( int *) * cache.sets);
+  // dirty = (int **) malloc( sizeof( int *) * cache.sets);
 
   for( i = 0; i < cache.sets; i++ )
   {
     tag[i] = (int *) malloc( sizeof( int ) * cache.ways);
     lru[i] = (int *) malloc( sizeof( int ) * cache.ways);
-    dirty[i] = (int *) malloc( sizeof( int ) * cache.ways);
+    // dirty[i] = (int *) malloc( sizeof( int ) * cache.ways);
   }
 
   printf("Initialize Cache...\n");
@@ -524,7 +521,7 @@ int main(int argc, char* argv[])
     {
       tag[i][j] = -1;
       lru[i][j] = -1;
-      dirty[i][j] = 0;
+      // dirty[i][j] = 0;
     }
     valid[i] = 0;
   }
@@ -627,9 +624,9 @@ int main(int argc, char* argv[])
                        page_size,
                        page_table,
                        &grid_1d_b[i]);
-#ifdef DEBUG
-        // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-        // printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_1d_a[i]);
+#ifdef DEBUGVP
+        printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
+        printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_1d_a[i]);
 #endif
       }
       break;
@@ -652,9 +649,9 @@ int main(int argc, char* argv[])
                          page_size,
                          page_table,
                          &grid_2d_b[i][j]);
-#ifdef DEBUG
-          // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-          // printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_2d_a[i][j]);
+#ifdef DEBUGVP
+          printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
+          printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_2d_a[i][j]);
 #endif
         }
       }
@@ -680,9 +677,9 @@ int main(int argc, char* argv[])
                            page_size,
                            page_table,
                            &grid_3d_b[i][j][k]);
-#ifdef DEBUG
-            // printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
-            // printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_3d_a[i][j][k]);
+#ifdef DEBUGVP
+            printf("%s%016" PRIX64 "\n", "Virtual addr: ", virtual_addr_a);
+            printf("%s%016" PRIX64 "\n", "Physical addr: ", grid_3d_a[i][j][k]);
 #endif
           }
         }
@@ -938,12 +935,14 @@ int main(int argc, char* argv[])
         memset(ops, 0, sizeof(ops));
         // Read operation from HOST
         sprintf(ops, "HOST_RD");
+        total_HOST_REQ ++;
 
-        ret = run_lru_simulation( &cache, grid_1d_a[i], 0); //loadstore = 0 load, o/w write
+        ret = run_lru_simulation( &cache, grid_1d_a[i]);
         if( ret == -1 )
         {
           // Central point
           write_to_file(outfile, ops, num_bytes, vaults, grid_1d_a[i]);
+          total_HOST_MRD ++;
         }
 
   #ifdef DEBUG
@@ -964,36 +963,34 @@ int main(int argc, char* argv[])
            *
            */
           sprintf(ops, "PIMS_RD");
-          write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
-  #ifdef DEBUG
-        // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i]);
-  #endif
+          /*
+           * Todo: PIMS cache simulation
+           *
+           */
+          // write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i]);
         }
         else
         {
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
           sprintf(ops, "HOST_RD");
-        }
-
-        // Orders points
-        for( r = 1; r <= sten_order; r++)
-        {
-          ret = run_lru_simulation( &cache, grid_1d_a[i-r], 0);
-          if( ret == -1 )
+          // Orders points
+          for( r = 1; r <= sten_order; r++)
           {
-            write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
+            total_HOST_REQ ++;
+            ret = run_lru_simulation( &cache, grid_1d_a[i-r]);
+            if( ret == -1 )
+            {
+              write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i-r]);
+              total_HOST_MRD ++;
+            }
+            ret = run_lru_simulation( &cache, grid_1d_a[i+r]);
+            if( ret == -1 )
+            {
+              write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
+              total_HOST_MRD ++;
+            }
           }
-          ret = run_lru_simulation( &cache, grid_1d_a[i+r], 0);
-          if( ret == -1 )
-          {
-            write_to_file(outfile, ops, stor_size, procid, grid_1d_a[i+r]);
-          }
-
-  #ifdef DEBUG
-        // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i-r]);
-        // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_a[i+r]);
-  #endif
         }
 
         memset(ops, 0, sizeof(ops));
@@ -1003,11 +1000,9 @@ int main(int argc, char* argv[])
          * Allways record write operation
          */
         sprintf(ops, "HOST_WR");
-        ret = run_lru_simulation( &cache, grid_1d_b[i], 1);
-        if( ret == -1 )
-        {
-          write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
-        }
+        write_to_file(outfile, ops, stor_size, vaults, grid_1d_b[i]);
+        total_HOST_REQ ++;
+        total_HOST_MWR ++;
       }
       // Read grid b, wirte grid a----------------------------------------------
       for( i = sten_order; i < (dim_x-sten_order); i++ )
@@ -1015,12 +1010,14 @@ int main(int argc, char* argv[])
         memset(ops, 0, sizeof(ops));
         // Read operation from HOST
         sprintf(ops, "HOST_RD");
+        total_HOST_REQ ++;
 
-        ret = run_lru_simulation( &cache, grid_1d_b[i], 0);
+        ret = run_lru_simulation( &cache, grid_1d_b[i]);
         if( ret == -1 )
         {
           // Central point
           write_to_file(outfile, ops, num_bytes, vaults, grid_1d_b[i]);
+          total_HOST_MRD ++;
         }
 
   #ifdef DEBUG
@@ -1041,10 +1038,11 @@ int main(int argc, char* argv[])
            *
            */
           sprintf(ops, "PIMS_RD");
-          write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i]);
-  #ifdef DEBUG
-        // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_b[i]);
-  #endif
+          /*
+           * Todo: PIMS cache simulation
+           *
+           */
+          // write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i]);
         }
         else
         {
@@ -1056,21 +1054,19 @@ int main(int argc, char* argv[])
         // Orders points
         for( r = 1; r <= sten_order; r++)
         {
-          ret = run_lru_simulation( &cache, grid_1d_b[i-r], 0);
+          total_HOST_REQ ++;
+          ret = run_lru_simulation( &cache, grid_1d_b[i-r]);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i-r]);
+            total_HOST_MRD ++;
           }
-          ret = run_lru_simulation( &cache, grid_1d_b[i+r], 0);
+          ret = run_lru_simulation( &cache, grid_1d_b[i+r]);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, stor_size, procid, grid_1d_b[i+r]);
+            total_HOST_MRD ++;
           }
-
-  #ifdef DEBUG
-        // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_b[i-r]);
-        // printf("%s:%d:%d:0x%016" PRIX64 "\n", ops, num_bytes, procid, grid_1d_b[i+r]);
-  #endif
         }
 
         memset(ops, 0, sizeof(ops));
@@ -1080,11 +1076,9 @@ int main(int argc, char* argv[])
          * Allways record write operation
          */
         sprintf(ops, "HOST_WR");
-        ret = run_lru_simulation( &cache, grid_1d_a[i], 1);
-        if( ret == -1 )
-        {
-          write_to_file(outfile, ops, stor_size, vaults, grid_1d_a[i]);
-        }
+        write_to_file(outfile, ops, stor_size, vaults, grid_1d_a[i]);
+        total_HOST_REQ ++;
+        total_HOST_MWR ++;
       }   //Endfor sten_order i
     }     //Endfor iteration
   }       //Endif dim == 1
@@ -1100,12 +1094,13 @@ int main(int argc, char* argv[])
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
           sprintf(ops, "HOST_RD");
-
+          total_HOST_REQ ++;
           // Central point
-          ret = run_lru_simulation( &cache, grid_2d_a[i][j], 0);
+          ret = run_lru_simulation( &cache, grid_2d_a[i][j]);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j]);
+            total_HOST_MRD ++;
           }
 
 
@@ -1135,28 +1130,33 @@ int main(int argc, char* argv[])
           // Orders points
           for( r = 1; r <= sten_order; r++ )
           {
-            ret = run_lru_simulation( &cache, grid_2d_a[i-r][j], 0);
+            total_HOST_REQ ++;
+            ret = run_lru_simulation( &cache, grid_2d_a[i-r][j]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i-r][j]);
+              total_HOST_MRD ++;
             }
 
-            ret = run_lru_simulation( &cache, grid_2d_a[i+r][j], 0);
+            ret = run_lru_simulation( &cache, grid_2d_a[i+r][j]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i+r][j]);
+              total_HOST_MRD ++;
             }
 
-            ret = run_lru_simulation( &cache, grid_2d_a[i][j-r], 0);
+            ret = run_lru_simulation( &cache, grid_2d_a[i][j-r]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j-r]);
+              total_HOST_MRD ++;
             }
 
-            ret = run_lru_simulation( &cache, grid_2d_a[i][j+r], 0);
+            ret = run_lru_simulation( &cache, grid_2d_a[i][j+r]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_a[i][j+r]);
+              total_HOST_MRD ++;
             }
           }
 
@@ -1167,8 +1167,10 @@ int main(int argc, char* argv[])
            *
            */
           sprintf(ops, "HOST_WR");
-          ret = run_lru_simulation( &cache, grid_2d_b[i][j], 1);
+          ret = run_lru_simulation( &cache, grid_2d_b[i][j]);
           write_to_file(outfile, ops, stor_size, vaults, grid_2d_b[i][j]);
+          total_HOST_REQ ++;
+          total_HOST_MWR ++;
         } //Endfor sten_order j
       }   //Endfor sten_order i
 
@@ -1180,12 +1182,14 @@ int main(int argc, char* argv[])
           memset(ops, 0, sizeof(ops));
           // Read operation from HOST
           sprintf(ops, "HOST_RD");
+          total_HOST_REQ ++;
 
           // Central point
-          ret = run_lru_simulation( &cache, grid_2d_b[i][j], 0);
+          ret = run_lru_simulation( &cache, grid_2d_b[i][j]);
           if( ret == -1 )
           {
             write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i][j]);
+            total_HOST_MRD ++;
           }
 
 
@@ -1215,29 +1219,33 @@ int main(int argc, char* argv[])
           // Orders points
           for( r = 1; r <= sten_order; r++ )
           {
-            ret = run_lru_simulation( &cache, grid_2d_b[i-r][j],
-                                      0);
+            total_HOST_REQ ++;
+            ret = run_lru_simulation( &cache, grid_2d_b[i-r][j]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i-r][j]);
+              total_HOST_MRD ++;
             }
 
-            ret = run_lru_simulation( &cache, grid_2d_a[i+r][j], 0);
+            ret = run_lru_simulation( &cache, grid_2d_a[i+r][j]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i+r][j]);
+              total_HOST_MRD ++;
             }
 
-            ret = run_lru_simulation( &cache, grid_2d_b[i][j-r],0);
+            ret = run_lru_simulation( &cache, grid_2d_b[i][j-r]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i][j-r]);
+              total_HOST_MRD ++;
             }
 
-            ret = run_lru_simulation( &cache, grid_2d_b[i][j+r], 0);
+            ret = run_lru_simulation( &cache, grid_2d_b[i][j+r]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults, grid_2d_b[i][j+r]);
+              total_HOST_MRD ++;
             }
           }
 
@@ -1248,8 +1256,10 @@ int main(int argc, char* argv[])
            *
            */
           sprintf(ops, "HOST_WR");
-          ret = run_lru_simulation( &cache, grid_2d_a[i][j], 1);
+          ret = run_lru_simulation( &cache, grid_2d_a[i][j]);
           write_to_file(outfile, ops, stor_size, vaults, grid_2d_a[i][j]);
+          total_HOST_REQ ++;
+          total_HOST_MWR ++;
         } // Endfor sten_order j
       }   // Endfor sten_order i
     }     // Endfor iteration
@@ -1268,11 +1278,13 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
             sprintf(ops, "HOST_RD");
+            total_HOST_REQ ++;
             // Central point
-            ret = run_lru_simulation( &cache, grid_3d_a[i][j][k], 0);
+            ret = run_lru_simulation( &cache, grid_3d_a[i][j][k]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults,grid_3d_a[i][j][k]);
+              total_HOST_MRD ++;
             }
 
             if( flag == 1)
@@ -1301,40 +1313,47 @@ int main(int argc, char* argv[])
             // Orders points
             for ( r = 1; r <= sten_order; r++ )
             {
-              ret = run_lru_simulation( &cache, grid_3d_a[i-r][j][k], 0);
+              total_HOST_REQ ++;
+              ret = run_lru_simulation( &cache, grid_3d_a[i-r][j][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i-r][j][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_a[i+r][j][k], 0);
+              ret = run_lru_simulation( &cache, grid_3d_a[i+r][j][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i+r][j][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_a[i][j-r][k], 0);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j-r][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j-r][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache,grid_3d_a[i][j+r][k], 0);
+              ret = run_lru_simulation( &cache,grid_3d_a[i][j+r][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j+r][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k-r], 0);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k-r]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k-r]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k+r], 0);
+              ret = run_lru_simulation( &cache, grid_3d_a[i][j][k+r]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_a[i][j][k+r]);
+                total_HOST_MRD ++;
               }
               // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
               // write_to_file(outfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
@@ -1347,11 +1366,10 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Write operation from HOST
             sprintf(ops, "HOST_WR");
-            ret = run_lru_simulation( &cache, grid_3d_b[i][j][k], 1);
-            if( ret == -1 )
-            {
-              write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
-            }
+            ret = run_lru_simulation( &cache, grid_3d_b[i][j][k]);
+            write_to_file(outfile, ops, stor_size, vaults, grid_3d_b[i][j][k]);
+            total_HOST_REQ ++;
+            total_HOST_MWR ++;
           } //Endfor sten_order k
         }   //Endfor sten_order j
       }     //Endfor sten_order i
@@ -1365,11 +1383,13 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Read operation from HOST
             sprintf(ops, "HOST_RD");
+            total_HOST_REQ ++;
             // Central point
-            ret = run_lru_simulation( &cache, grid_3d_b[i][j][k], 0);
+            ret = run_lru_simulation( &cache, grid_3d_b[i][j][k]);
             if( ret == -1 )
             {
               write_to_file(outfile, ops, num_bytes, vaults,grid_3d_b[i][j][k]);
+              total_HOST_MRD ++;
             }
 
             if( flag == 1)
@@ -1398,40 +1418,47 @@ int main(int argc, char* argv[])
             // Orders points
             for ( r = 1; r <= sten_order; r++ )
             {
-              ret = run_lru_simulation( &cache, grid_3d_b[i-r][j][k], 0);
+              total_HOST_REQ ++;
+              ret = run_lru_simulation( &cache, grid_3d_b[i-r][j][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i-r][j][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_b[i+r][j][k], 0);
+              ret = run_lru_simulation( &cache, grid_3d_b[i+r][j][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i+r][j][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_b[i][j-r][k], 0);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j-r][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j-r][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_b[i][j+r][k], 0);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j+r][k]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j+r][k]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_b[i][j][k-r], 0);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j][k-r]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j][k-r]);
+                total_HOST_MRD ++;
               }
 
-              ret = run_lru_simulation( &cache, grid_3d_b[i][j][k+r], 0);
+              ret = run_lru_simulation( &cache, grid_3d_b[i][j][k+r]);
               if( ret == -1 )
               {
                 write_to_file(outfile, ops, num_bytes, vaults, grid_3d_b[i][j][k+r]);
+                total_HOST_MRD ++;
               }
               // write_to_file(outfile, ops, stor_size, procid, grid_3d_b[i-r][j][k]);
               // write_to_file(outfile, ops, stor_size, procid, grid_3d_b[i+r][j][k]);
@@ -1444,30 +1471,25 @@ int main(int argc, char* argv[])
             memset(ops, 0, sizeof(ops));
             // Write operation from HOST
             sprintf(ops, "HOST_WR");
-            ret = run_lru_simulation( &cache, grid_3d_a[i][j][k], 1);
-            if( ret == -1 )
-            {
-              write_to_file(outfile, ops, stor_size, vaults, grid_3d_a[i][j][k]);
-            }
+            ret = run_lru_simulation( &cache, grid_3d_a[i][j][k]);
+            write_to_file(outfile, ops, stor_size, vaults, grid_3d_a[i][j][k]);
+            total_HOST_REQ ++;
+            total_HOST_MWR ++;
           } //Endfor sten_order k
         }   //Endfor sten_order j
       }     //Endfor sten_order i
     }       // Endfor iteration
   }         // Endif dim = 3
 
-
-  hit_rate = (((double)(cache.load_hits + cache.store_hits))/
-              ((double)(cache.load_hits + cache.load_misses + cache.store_hits + cache.store_misses)));
-  miss_rate = (((double)(cache.load_misses + cache.store_misses))/
-              ((double)(cache.load_hits + cache.load_misses + cache.store_hits + cache.store_misses)));
+  miss_rate = (double)((double)(total_HOST_MRD + total_HOST_MWR)/(double)total_HOST_REQ);
+  hit_rate = 1 - miss_rate;
 
   printf("Write cache information!\n");
   write_cache_info( cachelogfile, filename, cache.ways,
                     cache.cache_size, cache.block_size,
-                    cache.load_hits, cache.load_misses,
-                    cache.store_hits, cache.store_misses,
-                    cache.dirty_eviction,
-                    cache.load, cache.store,
+                    total_HOST_REQ,
+                    total_HOST_MRD,
+                    total_HOST_MWR,
                     hit_rate, miss_rate );
   fclose(cachelogfile);
   printf("Finish!\n");
@@ -1487,12 +1509,12 @@ cleanup:
   {
     free(tag[i]);
     free(lru[i]);
-    free(dirty[i]);
+    // free(dirty[i]);
   }
 
   free(tag);
   free(lru);
-  free(dirty);
+  // free(dirty);
   free(valid);
 
   printf("Free memory trace!\n");
@@ -1611,12 +1633,18 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
 
 /* --------------------------------------------- run_lru_simulation */
 int run_lru_simulation( cache_node *cache,
-                        uint64_t address,
-                        int loadstore)
+                        uint64_t address )
 {
-  uint64_t block_addr = (uint64_t)(address >> (uint64_t)log2(cache->block_size) );
+  uint64_t block_addr = (uint64_t)( address / (cache->block_size) );
   uint64_t index = (uint64_t)( block_addr % cache->sets);
   uint64_t tag_val = (uint64_t)( block_addr >> (uint64_t)log2(cache->sets));
+
+#ifdef DEBUGCA
+  printf("%s%016" PRIX64 "\n", "Physcial addr: ", address);
+  printf("%s%016" PRIX64 "\n", "Block addr: ", block_addr);
+  printf("%s%016" PRIX64 "\n", "Index: ", index);
+  printf("%s%016" PRIX64 "\n", "Tag: ", tag_val);
+#endif
 
   int hit_flag;
   int found;
@@ -1628,22 +1656,13 @@ int run_lru_simulation( cache_node *cache,
   // Compare tag
   if( valid[index] == 0 )
   {
+#ifdef DEBUGCA
+    printf("Invalid!\n");
+#endif
     valid[index] = 1;
     tag[index][0] = tag_val;
     lru[index][0] = 0;
 
-    if( loadstore == 0 )
-    {
-      //load
-      cache->load++;
-      cache->load_misses++;
-    }
-    else
-    {
-      cache->store++;
-      cache->store_misses++;
-      dirty[index][0] = 1;
-    }
     // Miss!
     result = -1;
   }
@@ -1654,6 +1673,9 @@ int run_lru_simulation( cache_node *cache,
     {
       if( tag[index][i] == tag_val )
       {
+#ifdef DEBUGCA
+    printf("HIT!!\n");
+#endif
         // Hit!
         hit_flag = 1;
         result = 1;
@@ -1666,21 +1688,14 @@ int run_lru_simulation( cache_node *cache,
           }
         }
         lru[index][i] = 0;
-        if( loadstore == 0 )
-        {
-          cache->load++;
-          cache->load_hits++;
-        }
-        else{
-          cache->store++;
-          cache->store_hits++;
-          dirty[index][i] = 1;
-        }
         break;
       }
     }
     if( hit_flag == 0 )
     {
+#ifdef DEBUGCA
+    printf("MISS!!\n");
+#endif
       // Miss!
       result = -1;
       found = 0;
@@ -1697,17 +1712,6 @@ int run_lru_simulation( cache_node *cache,
             lru[index][j] = lru[index][j] + 1;
           }
           lru[index][i] = 0;
-
-          if( loadstore == 0 )
-          {
-            cache->load++;
-            cache->load_hits++;
-          }
-          else{
-            cache->store++;
-            cache->store_hits++;
-            dirty[index][i] = 1;
-          }
           break;
         }
       }
@@ -1716,9 +1720,9 @@ int run_lru_simulation( cache_node *cache,
         //all blocks are in use
         // replace the highest lru
         lru1 = 0;
-        for( j = 0; j < cache->sets; j++ )
+        for( j = 0; j < cache->ways; j++ )
         {
-          if( lru[index][j] == (cache->sets - 1) )
+          if( lru[index][j] == (cache->ways - 1) )
           {
             lru1 = j;
             break;
@@ -1726,37 +1730,13 @@ int run_lru_simulation( cache_node *cache,
         }
         tag[index][lru1] = tag_val;
 
-        for( j = 0; j < cache->sets; j++ )
+        for( j = 0; j < cache->ways; j++ )
         {
           lru[index][j] = lru[index][j] + 1;
         }
         lru[index][lru1] = 0;
-
-        if( loadstore == 0 )
-        {
-          cache->load++;
-          cache->load_hits++;
-
-          if( dirty[index][lru1] == 1 )
-          {
-            cache->dirty_eviction++;
-            dirty[index][lru1] = 0;
-          }
-        }
-        else{
-          cache->store++;
-          cache->store_hits++;
-          if( dirty[index][lru1] == 1 )
-          {
-            cache->dirty_eviction++;
-          }
-          else
-          {
-            dirty[index][lru1] = 1;
-          }
-        }
       }
-    }
-  }
+    } // Endif hit_flag
+  }   // Endelif Valid
   return result;
 }
