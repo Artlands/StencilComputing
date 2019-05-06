@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
   int j = 0;
   int k = 0;
   int r = 0;
-  // int n = 0;
+  int n = 0;
   uint64_t idx = 0;
 
   /* STENCIL GRID FEATURES
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
 
   /* PAGE TABLE*/
   uint64_t mem_full = 0;               // Main memory size
-  uint64_t mem_sten = ;                // Memory for stencil
+  uint64_t mem_sten = 0;                // Memory for stencil
   uint64_t page_size = PAGESIZE;       // page size, 4k
   uint64_t all_entries = 0;            // number of all entries
   uint64_t ste_entries = 0;            // entries for stencil pagetable
@@ -355,12 +355,12 @@ int main(int argc, char* argv[])
    *
    */
   num_block = (cache_size * 1024)/BLOCKSIZE;
-  cache_node cache = {.cache_size = cache_size * 1024,
-                      .block_size = BLOCKSIZE,
-                      .ways = WAYS,
-                      .sets = num_block/WAYS,
-                      .hits = 0,
-                      .misses = 0};
+  cache = {.cache_size = cache_size * 1024,
+           .block_size = BLOCKSIZE,
+           .ways = WAYS,
+           .sets = num_block/WAYS,
+           .hits = 0,
+           .misses = 0};
 
 #ifdef DEBUGSET
   printf("# Blocks: %d\n", num_block);
