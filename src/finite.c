@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
   /* CACHE */
   char cachelog[1024];                 // cache log file name
   FILE *cachelogfile = NULL;
-  cache_node *cache;
+  cache_node cache;
   int cache_size;                      // specified by user
   int num_block;                       // number of blocks in cache
   double hit_rate = 0;
