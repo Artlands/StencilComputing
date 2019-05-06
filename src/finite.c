@@ -17,43 +17,67 @@
 #include <math.h>
 #include "pims.h"
 
-// #define DEBUG
-// #define DEBUGPT
-// #define DEBUGCACHE
-// #define DEBUGVP
-// #define DEBUGSET
+// #define DEBUGPT      //debug page table
+// #define DEBUGVP      //debug virtual page and offset
+// #define DEBUGSET     //debug settings
+// #define DEBUGCACHE   //debug cache
 
-/* Global variables */
+/* Global variables for page table*/
 uint64_t pta_miss = 0;
 uint64_t oldestAge = 0;
 uint64_t indexOfOldest = 0;
 uint64_t nextEntryIndex = 0;
 
+/* Global variables for cache*/
 int *valid;
 int **tag;
 int **lru;
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
-
 extern int getshiftamount( uint32_t bsize, uint32_t *shiftamt );
-extern int getpimsid (int *pimsid, uint64_t addr, uint32_t shiftamt, uint32_t num_vaults);
-extern void write_to_file(FILE* fp, char* op, int num_bytes, int procid, uint64_t addr);
+
+extern int getpimsid (int *pimsid,
+                      uint64_t addr,
+                      uint32_t shiftamt,
+                      uint32_t num_vaults);
+
+extern void write_to_file(FILE* fp,
+                          char* op,
+                          int num_bytes,
+                          int procid,
+                          uint64_t addr);
 
 extern int geneRandom(int size);
-extern void mapVirtualaddr(uint64_t virtual_addr, uint64_t ste_entries, uint64_t page_size,
-                    pta_node *page_table, uint64_t *physical_addr);
+
+extern void mapVirtualaddr(uint64_t virtual_addr,
+                           uint64_t ste_entries,
+                           uint64_t page_size,
+                           pta_node *page_table,
+                           uint64_t *physical_addr);
 
 // Write stencil information
-extern void write_sten_info(FILE* fp, char* filename, int dim,
-                     int dim_x, int dim_y, int dim_z,
-                     uint32_t cntr_size, int sten_order);
+extern void write_sten_info(FILE* fp,
+                            char* filename,
+                            int dim,
+                            int dim_x,
+                            int dim_y,
+                            int dim_z,
+                            uint32_t cntr_size,
+                            int sten_order);
 
 // Write cache information
-extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
-                       uint64_t cache_size, uint64_t block_size,
-                       uint64_t total_HOST_REQ,
-                       uint64_t total_HOST_MRD,
-                       uint64_t total_HOST_MWR,
-                       double hit_rate, double miss_rate );
+extern void write_cache_info( FILE* fp,
+                              char* filename,
+                              uint64_t ways,
+                              uint64_t cache_size,
+                              uint64_t block_size,
+                              uint64_t total_HOST_REQ,
+                              uint64_t total_HOST_RD,
+                              uint64_t total_HOST_WR,
+                              uint64_t total_PIMS_RD,
+                              uint64_t total_PIMS_IM,
+                              double pims_rd_percent,
+                              double hit_rate,
+                              double miss_rate );
 
 int run_lru_simulation( cache_node *cache,
                         uint64_t address);
@@ -67,7 +91,7 @@ int main(int argc, char* argv[])
   int j = 0;
   int k = 0;
   int r = 0;
-  int n = 0;
+  // int n = 0;
   uint64_t idx = 0;
 
   /* STENCIL GRID FEATURES
@@ -109,10 +133,11 @@ int main(int argc, char* argv[])
   char ops[10];                  // operations
 
   uint64_t total_HOST_REQ = 0;  // host total requests
-  uint64_t total_HOST_MRD = 0;  // host memory read requests
-  uint64_t total_HOST_MWR = 0;  // host memory write requests
-  uint64_t total_PIMS_MRD = 0;  // pims memory read requests
-  uint64_t total_PIMS_INM = 0;  // pims in memory requests
+  uint64_t total_HOST_RD = 0;  // host memory read requests
+  uint64_t total_HOST_WR = 0;  // host memory write requests
+  uint64_t total_PIMS_RD = 0;  // pims memory read requests
+  uint64_t total_PIMS_IM = 0;  // pims in memory requests
+  double pims_rd_percent = 0;  // pims read percentage
 
   /* MALLOC MEMORY*/
   uint64_t *data_cntr_a;             // data container
@@ -125,18 +150,18 @@ int main(int argc, char* argv[])
   uint64_t virtual_addr_c = 0x00ll;  // temporary virtual addr
 
   /* PAGE TABLE*/
-  uint64_t mem_full = 0;                // Main memory size
+  uint64_t mem_full = 0;               // Main memory size
   uint64_t mem_sten = ;                // Memory for stencil
   uint64_t page_size = PAGESIZE;       // page size, 4k
   uint64_t all_entries = 0;            // number of all entries
-  uint64_t ste_entries = 0;                // entries for stencil pagetable
+  uint64_t ste_entries = 0;            // entries for stencil pagetable
   pta_node *page_table = NULL;         // page table
   int randframe;                       // generate random page frame
 
   /* CACHE */
   char cachelog[1024];                 // cache log file name
   FILE *cachelogfile = NULL;
-  // cache_node *cache;
+  cache_node *cache;
   int cache_size;                      // specified by user
   int num_block;                       // number of blocks in cache
   double hit_rate = 0;
@@ -209,12 +234,12 @@ int main(int argc, char* argv[])
 #endif
 
   /* ---- Sanity Check ---- */
-  if( dim_x <= 0 || dim_y <= 0 || dim_z <= 0 ) {
+  if( dim_x < 0 || dim_y < 0 || dim_z < 0 ) {
     printf("ERROR: Grid size is invalid\n");
     return -1;
   }
 
-  if ( sten_order < 1 || (sten_order % 2) != 0 ) {
+  if ( sten_order < 2 || (sten_order % 2) != 0 ) {
     printf("ERROR: Stencil order is invalid\n");
     return -1;
   }
@@ -272,8 +297,8 @@ int main(int argc, char* argv[])
 #endif
 
   /* Make sure we have enough HMC capacity */
-  if( (long)((long)capacity * (long)SLOTS_PER_GB) <
-      (long)(cntr_size * 2 * 8 + sten_order * 8) )
+  if( (uint32_t)((uint32_t)capacity * (uint32_t)SLOTS_PER_GB) <
+      (uint32_t)(cntr_size * 2 * stor_size + (sten_order/2 + 1) * stor_size) )
   {
     printf("ERROR: NOT ENOUGH AVAILABLE PHYSICAL STORAGE\n");
     return -1;
@@ -293,8 +318,9 @@ int main(int argc, char* argv[])
   all_entries = (uint64_t)(mem_full / page_size);
 
   // memory allocated for stencil kernal
-  mem_sten = (uint64_t)(((uint64_t)(cntr_size * 2) + (uint64_t)(sten_order/2 + 1)) * (uint64_t)(stor_size))
-  ste_entries = (uint64_t)(mem_sten/ page_size);
+  mem_sten = (uint64_t)(((uint64_t)(cntr_size * 2)
+                       + (uint64_t)(sten_order/2 + 1)) * (uint64_t)(stor_size));
+  ste_entries = (uint64_t)(mem_sten / page_size);
 
   randframe = geneRandom((int)all_entries); // 2^21 -1
 
@@ -304,6 +330,7 @@ int main(int argc, char* argv[])
   printf("%s%llu\n", "All entries: ", all_entries);
   printf("%s%llu\n", "Stencil entries: ", ste_entries);
 #endif
+
   page_table = (pta_node *)malloc(ste_entries * sizeof(pta_node));
   if( page_table == NULL )
   {
@@ -389,7 +416,7 @@ int main(int argc, char* argv[])
   data_cntr_b = (uint64_t *) malloc( sizeof( uint64_t ) * cntr_size);
   coef_cntr_c = (uint64_t *) malloc( sizeof( uint64_t ) * (sten_order/2 + 1));
 
-  if( data_cntr_a == NULL || data_cntr_b == NULL || coef_cntr_c)
+  if( data_cntr_a == NULL || data_cntr_b == NULL || coef_cntr_c == NULL)
   {
     printf("Error: Out of memory\n");
     goto cleanup;
@@ -397,6 +424,7 @@ int main(int argc, char* argv[])
 
   grid_3d_a = (uint64_t ***) malloc( sizeof(uint64_t **) * (dim_x + sten_order) );
   grid_3d_b = (uint64_t ***) malloc( sizeof(uint64_t **) * (dim_x + sten_order) );
+
   if( grid_3d_a == NULL ||  grid_3d_b == NULL )
   {
     printf("Error: Out of memory\n");
@@ -498,8 +526,14 @@ int main(int argc, char* argv[])
   }
 
   // Write Stencil information
-  write_sten_info(tracelogfile, filename, dim, dim_x, dim_y, dim_z,
-                  cntr_size, sten_order);
+  write_sten_info(tracelogfile,
+                  filename,
+                  dim,
+                  dim_x,
+                  dim_y,
+                  dim_z,
+                  cntr_size,
+                  sten_order);
   /*
    *  Cache simulation and generate memory trace files
    *
@@ -526,14 +560,14 @@ int main(int argc, char* argv[])
              if( ret == -1 )
              {
                write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[0]);
-               total_HOST_MRD++;
+               total_HOST_RD++;
              }
              // Read central point
              ret = run_lru_simulation(&cache, grid_3d_a[i][j][k]);
              if( ret == -1 )
              {
                write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
-               total_HOST_MRD++;
+               total_HOST_RD++;
              }
              // Read order coefficients and points
              for( r = 1; r <= (sten_order/2); r++ )
@@ -542,7 +576,7 @@ int main(int argc, char* argv[])
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[r]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
 
                // dim_x
@@ -550,46 +584,46 @@ int main(int argc, char* argv[])
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
                ret = run_lru_simulation(&cache, grid_3d_a[i+r][j][k]);
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
                // dim_y
                ret = run_lru_simulation(&cache, grid_3d_a[i][j-r][k]);
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j-r][k]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
                ret = run_lru_simulation(&cache, grid_3d_a[i][j+r][k]);
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
                // dim_z
                ret = run_lru_simulation(&cache, grid_3d_a[i][j][k-r]);
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
                ret = run_lru_simulation(&cache, grid_3d_a[i][j][k+r]);
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
              }
              // Write result
              memset(ops, 0, sizeof(ops));
              sprintf(ops, "HOST_WR");
              write_to_file(hostfile, ops, stor_size, procid, grid_3d_b[i][j][k]);
-             total_HOST_MWR++;
+             total_HOST_WR++;
            }
            else{
              /* PIMS, memory request from host------------------------------- */
@@ -604,14 +638,14 @@ int main(int argc, char* argv[])
              if( ret == -1 )
              {
                write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[0]);
-               total_HOST_MRD++;
+               total_HOST_RD++;
              }
              // Read central point
              ret = run_lru_simulation(&cache, grid_3d_a[i][j][k]);
              if( ret == -1 )
              {
                write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
-               total_HOST_MRD++;
+               total_HOST_RD++;
              }
 
              // Read coefficients and corresponding calculated values
@@ -622,7 +656,7 @@ int main(int argc, char* argv[])
                if( ret == -1 )
                {
                  write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[r]);
-                 total_HOST_MRD++;
+                 total_HOST_RD++;
                }
                // calculated values, cache bypass
                // todo: where to store these calculated value and how to access them
@@ -630,14 +664,14 @@ int main(int argc, char* argv[])
                sprintf(ops, "PIMS_RD");
                // calculated values,
                write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
-               total_HOST_MRD++;
-               total_PIMS_MRD++;
+               total_HOST_RD++;
+               total_PIMS_RD++;
              }
              // Write result
              memset(ops, 0, sizeof(ops));
              sprintf(ops, "HOST_WR");
              write_to_file(hostfile, ops, stor_size, procid, grid_3d_b[i][j][k]);
-             total_HOST_MWR++;
+             total_HOST_WR++;
 
              /* PIMS, memory request inside memory--------------------------- */
              // get process id
@@ -657,7 +691,7 @@ int main(int argc, char* argv[])
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
-               total_PIMS_INM++;
+               total_PIMS_IM++;
              }
            }  // EndIfElse
          }    // Endfor sten_order k
@@ -665,7 +699,8 @@ int main(int argc, char* argv[])
      }        // Endfor sten_order i
    }          // Endfor iteration
 
-  total_HOST_REQ = total_HOST_MRD + total_HOST_MWR;
+  total_HOST_REQ = total_HOST_RD + total_HOST_WR;
+  pims_rd_percent = total_PIMS_RD / total_HOST_RD;
   hit_rate = cache.hits/(cache.hits + cache.misses);
   miss_rate = 1 - hit_rate;
 
@@ -673,10 +708,13 @@ int main(int argc, char* argv[])
   write_cache_info( cachelogfile, filename, cache.ways,
                     cache.cache_size, cache.block_size,
                     total_HOST_REQ,
-                    total_HOST_MRD,
-                    total_HOST_MWR,
-                    total_PIMS_MRD,
-                    total_PIMS_INM );
+                    total_HOST_RD,
+                    total_HOST_WR,
+                    total_PIMS_RD,
+                    total_PIMS_IM,
+                    pims_rd_percent,
+                    hit_rate,
+                    miss_rate );
   printf("Finish simulation!\n");
 
 cleanup:

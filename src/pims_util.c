@@ -182,9 +182,14 @@ extern int geneRandom(int size)
 /* EOF */
 
 /* --------------------------------------------- WIRTE_STEN_INFO */
-extern void write_sten_info(FILE* fp, char* filename, int dim,
-                     int dim_x, int dim_y, int dim_z,
-                     uint32_t cntr_size, int sten_order)
+extern void write_sten_info(FILE* fp,
+                            char* filename,
+                            int dim,
+                            int dim_x,
+                            int dim_y,
+                            int dim_z,
+                            uint32_t cntr_size,
+                            int sten_order)
 {
   uint32_t inner = 0;
   inner = dim_x * dim_y * dim_z;
@@ -200,24 +205,30 @@ extern void write_sten_info(FILE* fp, char* filename, int dim,
 /* EOF */
 
 /* --------------------------------------------- WIRTE_CACHE_INFO */
-extern void write_cache_info( FILE* fp, char* filename, uint64_t ways,
-                       uint64_t cache_size, uint64_t block_size,
-                       uint64_t total_HOST_REQ,
-                       uint64_t total_HOST_MRD,
-                       uint64_t total_HOST_MWR,
-                       uint64_t total_PIMS_MRD,
-                       uint64_t total_PIMS_INM,
-                       double hit_rate, double miss_rate )
+extern void write_cache_info( FILE* fp,
+                              char* filename,
+                              uint64_t ways,
+                              uint64_t cache_size,
+                              uint64_t block_size,
+                              uint64_t total_HOST_REQ,
+                              uint64_t total_HOST_RD,
+                              uint64_t total_HOST_WR,
+                              uint64_t total_PIMS_RD,
+                              uint64_t total_PIMS_IM,
+                              double pims_rd_percent,
+                              double hit_rate,
+                              double miss_rate )
 {
   fprintf(fp, "# Trace file path:      %s\n", filename);
   fprintf(fp, "# Cache ways:           %" PRId64 "\n", ways);
   fprintf(fp, "# Cache size:           %" PRId64 "\n", cache_size);
   fprintf(fp, "# Block size:           %" PRId64 "\n", block_size);
   fprintf(fp, "# Total HOST Requests:  %" PRId64 "\n", total_HOST_REQ);
-  fprintf(fp, "# Total HOST Read:      %" PRId64 "\n", total_HOST_MRD);
-  fprintf(fp, "# Total HOST Write:     %" PRId64 "\n", total_HOST_MWR);
-  fprintf(fp, "# Total PIMS Read:      %" PRId64 "\n", total_PIMS_MRD);
-  fprintf(fp, "# Total PIMS In-memory: %" PRId64 "\n", total_PIMS_INM);
+  fprintf(fp, "# Total HOST Read:      %" PRId64 "\n", total_HOST_RD);
+  fprintf(fp, "# Total HOST Write:     %" PRId64 "\n", total_HOST_WR);
+  fprintf(fp, "# Total PIMS Read:      %" PRId64 "\n", total_PIMS_RD);
+  fprintf(fp, "# Total PIMS In-memory: %" PRId64 "\n", total_PIMS_IM);
+  fprintf(fp, "# PIMS Read Percnetage: %f\n", pims_rd_percent);
   fprintf(fp, "# Hits rate:            %f\n", hit_rate);
   fprintf(fp, "# Misses rate:          %f\n", miss_rate);
   fprintf(fp, "#==============================================================================\n");
