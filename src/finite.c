@@ -293,11 +293,16 @@ int main(int argc, char* argv[])
 
 #ifdef DEBUGSET
         printf("%s%u\n", "Grid size (including ghost cells): ", cntr_size);
+        printf("%s%ld\n", "One GB: ", (long)SLOTS_PER_GB);
+        printf("%s%ld\n", "HMC capacity (in GB): ",
+              (long)((long)capacity * (long)SLOTS_PER_GB));
+        printf("%s%u\n", "Need memory: ",
+              (uint32_t)(cntr_size * 2 * stor_size + (sten_order/2 + 1) * stor_size));
 #endif
 
   /* Make sure we have enough HMC capacity */
-  if( (uint32_t)((uint32_t)capacity * (uint32_t)SLOTS_PER_GB) <
-      (uint32_t)(cntr_size * 2 * stor_size + (sten_order/2 + 1) * stor_size) )
+  if( (long)((long)capacity * (long)SLOTS_PER_GB) <
+      (long)(cntr_size * 2 * stor_size + (sten_order/2 + 1) * stor_size) )
   {
     printf("ERROR: NOT ENOUGH AVAILABLE PHYSICAL STORAGE\n");
     return -1;
@@ -699,8 +704,8 @@ int main(int argc, char* argv[])
    }          // Endfor iteration
 
   total_HOST_REQ = total_HOST_RD + total_HOST_WR;
-  pims_rd_percent = total_PIMS_RD / total_HOST_RD;
-  hit_rate = cache.hits/(cache.hits + cache.misses);
+  pims_rd_percent = (double)((double)total_PIMS_RD / (double)total_HOST_RD);
+  hit_rate = (double)((double)cache.hits/(double)(cache.hits + cache.misses));
   miss_rate = 1 - hit_rate;
 
   printf("Write cache information!\n");
@@ -809,7 +814,7 @@ cleanup:
         free(grid_3d_b[i]);
       }
     }
-    free(grid_3d_a);
+    free(grid_3d_b);
   }
   return 0;
 }

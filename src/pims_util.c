@@ -228,7 +228,7 @@ extern void write_cache_info( FILE* fp,
   fprintf(fp, "# Total HOST Write:     %" PRId64 "\n", total_HOST_WR);
   fprintf(fp, "# Total PIMS Read:      %" PRId64 "\n", total_PIMS_RD);
   fprintf(fp, "# Total PIMS In-memory: %" PRId64 "\n", total_PIMS_IM);
-  fprintf(fp, "# PIMS Read Percnetage: %f\n", pims_rd_percent);
+  fprintf(fp, "# PIMS Read Percentage: %f\n", pims_rd_percent);
   fprintf(fp, "# Hits rate:            %f\n", hit_rate);
   fprintf(fp, "# Misses rate:          %f\n", miss_rate);
   fprintf(fp, "#==============================================================================\n");
