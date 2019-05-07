@@ -140,6 +140,7 @@ int main(int argc, char* argv[])
   double pims_rd_percent = 0;  // pims read percentage
 
   /* MALLOC MEMORY*/
+  uint64_t ***tmp_point;
   uint64_t *data_cntr_a;             // data container
   uint64_t ***grid_3d_a;             // pointer container
   uint64_t *data_cntr_b;             // data container
@@ -710,6 +711,10 @@ int main(int argc, char* argv[])
          }    // Endfor sten_order k
        }      // Endfor sten_order j
      }        // Endfor sten_order i
+     // switch grid pointer
+     tmp_point = grid_3d_a;
+     grid_3d_a = grid_3d_b;
+     grid_3d_b = tmp_point;
    }          // Endfor iteration
 
   total_HOST_REQ = total_HOST_RD + total_HOST_WR;
