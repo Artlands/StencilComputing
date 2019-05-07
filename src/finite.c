@@ -319,18 +319,27 @@ int main(int argc, char* argv[])
    *
    */
   mem_full = (uint64_t)((uint64_t)capacity * (uint64_t)SLOTS_PER_GB);
-  all_entries = (uint64_t)(mem_full / page_size);
+  all_entries = (uint64_t)((uint64_t)mem_full / (uint64_t)page_size);
 
   // memory allocated for stencil kernal
   mem_sten = (uint64_t)(((uint64_t)(cntr_size * 2)
                        + (uint64_t)(sten_order/2 + 1)) * (uint64_t)(stor_size));
-  ste_entries = (uint64_t)(mem_sten / page_size);
+
+
+  if( mem_sten < page_size )
+  {
+    ste_entries = 1;
+  }
+  else
+  {
+    ste_entries = (uint64_t)(((uint64_t)mem_sten / (uint64_t)page_size) + 1);
+  }
 
   randframe = geneRandom((int)all_entries); // 2^21 -1
 
 #ifdef DEBUGSET
   printf("%s%d\n", "Capacity: ", capacity);
-  printf("%s%llu\n", "Memory: ", mem_full);
+  printf("%s%llu\n", "Stencil memory: ", mem_sten);
   printf("%s%llu\n", "All entries: ", all_entries);
   printf("%s%llu\n", "Stencil entries: ", ste_entries);
 #endif
@@ -904,7 +913,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
 }
 /* EOF */
 
-/* --------------------------------------------- run_lru_simulation */
+// /* --------------------------------------------- run_lru_simulation */
 int run_lru_simulation( cache_node *cache,
                         uint64_t address )
 {
