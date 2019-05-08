@@ -17,6 +17,7 @@
 #include <math.h>
 #include "pims.h"
 
+// #define GENTRACE        // generate traces
 // #define DEBUGPT      //debug page table
 // #define DEBUGVP      //debug virtual page and offset
 // #define DEBUGSET     //debug settings
@@ -518,27 +519,28 @@ int main(int argc, char* argv[])
             dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
     sprintf(pimsname, "../traces/INME-%dD-%dpoints-O%dX%dY%dZ%d",
             dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
-
+#ifdef GENTRACE
     pimsfile = fopen(pimsname, "w");
     if( pimsfile == NULL )
     {
       printf("ERROR: Cannot open trace file\n");
       goto cleanup;
     }
+#endif
   }
   else
   {
     sprintf(filename, "../traces/%dD-%dpoints-O%dX%dY%dZ%d",
             dim, sten_ptnum, sten_order, dim_x, dim_y, dim_z);
   }
-
+#ifdef GENTRACE
   hostfile = fopen(filename, "w");
   if( hostfile == NULL )
   {
     printf("ERROR: Cannot open trace file\n");
     goto cleanup;
   }
-
+#endif
   // Write Stencil information
   write_sten_info(tracelogfile,
                   filename,
@@ -573,14 +575,18 @@ int main(int argc, char* argv[])
              ret = run_lru_simulation(&cache, coef_cntr_c[0]);
              if( ret == -1 )
              {
+#ifdef GENTRACE
                write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[0]);
+#endif
                total_HOST_RD++;
              }
              // Read central point
              ret = run_lru_simulation(&cache, grid_3d_a[i][j][k]);
              if( ret == -1 )
              {
+#ifdef GENTRACE
                write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
+#endif
                total_HOST_RD++;
              }
              // Read order coefficients and points
@@ -589,7 +595,9 @@ int main(int argc, char* argv[])
                ret = run_lru_simulation(&cache, coef_cntr_c[r]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[r]);
+#endif
                  total_HOST_RD++;
                }
 
@@ -597,46 +605,60 @@ int main(int argc, char* argv[])
                ret = run_lru_simulation(&cache, grid_3d_a[i-r][j][k]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
+#endif
                  total_HOST_RD++;
                }
                ret = run_lru_simulation(&cache, grid_3d_a[i+r][j][k]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
+#endif
                  total_HOST_RD++;
                }
                // dim_y
                ret = run_lru_simulation(&cache, grid_3d_a[i][j-r][k]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j-r][k]);
+#endif
                  total_HOST_RD++;
                }
                ret = run_lru_simulation(&cache, grid_3d_a[i][j+r][k]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
+#endif
                  total_HOST_RD++;
                }
                // dim_z
                ret = run_lru_simulation(&cache, grid_3d_a[i][j][k-r]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
+#endif
                  total_HOST_RD++;
                }
                ret = run_lru_simulation(&cache, grid_3d_a[i][j][k+r]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
+#endif
                  total_HOST_RD++;
                }
              }
              // Write result
              memset(ops, 0, sizeof(ops));
              sprintf(ops, "HOST_WR");
+#ifdef GENTRACE
              write_to_file(hostfile, ops, stor_size, procid, grid_3d_b[i][j][k]);
+#endif
              total_HOST_WR++;
            }
            else{
@@ -651,14 +673,18 @@ int main(int argc, char* argv[])
              ret = run_lru_simulation(&cache, coef_cntr_c[0]);
              if( ret == -1 )
              {
+#ifdef GENTRACE
                write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[0]);
+#endif
                total_HOST_RD++;
              }
              // Read central point
              ret = run_lru_simulation(&cache, grid_3d_a[i][j][k]);
              if( ret == -1 )
              {
+#ifdef GENTRACE
                write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
+#endif
                total_HOST_RD++;
              }
 
@@ -669,7 +695,9 @@ int main(int argc, char* argv[])
                ret = run_lru_simulation(&cache, coef_cntr_c[r]);
                if( ret == -1 )
                {
+#ifdef GENTRACE
                  write_to_file(hostfile, ops, stor_size, procid, coef_cntr_c[r]);
+#endif
                  total_HOST_RD++;
                }
                // calculated values, cache bypass
@@ -677,14 +705,18 @@ int main(int argc, char* argv[])
                memset(ops, 0, sizeof(ops));
                sprintf(ops, "PIMS_RD");
                // calculated values,
+#ifdef GENTRACE
                write_to_file(hostfile, ops, stor_size, procid, grid_3d_a[i][j][k]);
+#endif
                total_HOST_RD++;
                total_PIMS_RD++;
              }
              // Write result
              memset(ops, 0, sizeof(ops));
              sprintf(ops, "HOST_WR");
+#ifdef GENTRACE
              write_to_file(hostfile, ops, stor_size, procid, grid_3d_b[i][j][k]);
+#endif
              total_HOST_WR++;
 
              /* PIMS, memory request inside memory--------------------------- */
@@ -699,13 +731,15 @@ int main(int argc, char* argv[])
              for( r = 1; r <= (sten_order/2); r++ )
              {
                // todo: add cache
+#ifdef GENTRACE
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i-r][j][k]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i+r][j][k]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j-r][k]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j+r][k]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j][k-r]);
                write_to_file(pimsfile, ops, stor_size, procid, grid_3d_a[i][j][k+r]);
-               total_PIMS_IM++;
+#endif
+               total_PIMS_IM += 6;
              }
            }  // EndIfElse
          }    // Endfor sten_order k
