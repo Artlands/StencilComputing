@@ -1,0 +1,78 @@
+# Trace file path:      ../traces/3D-7points-O2X96Y96Z96
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  1216540
+# Total HOST Read:      331804
+# Total HOST Write:     884736
+# Total PIMS Read:      0
+# Total PIMS In-memory: 0
+# PIMS Read Percentage: 0.000000
+# Hits rate:            0.958330
+# Misses rate:          0.041670
+#==============================================================================
+# Trace file path:      ../traces/3D-13points-O4X96Y96Z96
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  1437750
+# Total HOST Read:      553014
+# Total HOST Write:     884736
+# Total PIMS Read:      0
+# Total PIMS In-memory: 0
+# PIMS Read Percentage: 0.000000
+# Hits rate:            0.960934
+# Misses rate:          0.039066
+#==============================================================================
+# Trace file path:      ../traces/3D-19points-O6X96Y96Z96
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  1658960
+# Total HOST Read:      774224
+# Total HOST Write:     884736
+# Total PIMS Read:      0
+# Total PIMS In-memory: 0
+# PIMS Read Percentage: 0.000000
+# Hits rate:            0.961953
+# Misses rate:          0.038047
+#==============================================================================
+# Trace file path:      ../traces/3D-25points-O8X96Y96Z96
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  8085411
+# Total HOST Read:      7200675
+# Total HOST Write:     884736
+# Total PIMS Read:      0
+# Total PIMS In-memory: 0
+# PIMS Read Percentage: 0.000000
+# Hits rate:            0.728707
+# Misses rate:          0.271293
+#==============================================================================
+# Trace file path:      ../traces/3D-31points-O10X96Y96Z96
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  9854907
+# Total HOST Read:      8970171
+# Total HOST Write:     884736
+# Total PIMS Read:      0
+# Total PIMS In-memory: 0
+# PIMS Read Percentage: 0.000000
+# Hits rate:            0.725978
+# Misses rate:          0.274022
+#==============================================================================
+# Trace file path:      ../traces/3D-37points-O12X96Y96Z96
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  11859386
+# Total HOST Read:      10974650
+# Total HOST Write:     884736
+# Total PIMS Read:      0
+# Total PIMS In-memory: 0
+# PIMS Read Percentage: 0.000000
+# Hits rate:            0.718081
+# Misses rate:          0.281919
+#==============================================================================

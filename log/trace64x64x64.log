@@ -1,0 +1,36 @@
+# Trace file path:       ../traces/3D-7points-O2X64Y64Z64
+# Stencil Dimension:    3, X: 64, Y: 64, Z: 64
+# Stencil Grid Size:    262144
+# Stencil Outer Size:   287496
+# Stencil Order:        2
+#==============================================================================
+# Trace file path:       ../traces/3D-13points-O4X64Y64Z64
+# Stencil Dimension:    3, X: 64, Y: 64, Z: 64
+# Stencil Grid Size:    262144
+# Stencil Outer Size:   314432
+# Stencil Order:        4
+#==============================================================================
+# Trace file path:       ../traces/3D-19points-O6X64Y64Z64
+# Stencil Dimension:    3, X: 64, Y: 64, Z: 64
+# Stencil Grid Size:    262144
+# Stencil Outer Size:   343000
+# Stencil Order:        6
+#==============================================================================
+# Trace file path:       ../traces/3D-25points-O8X64Y64Z64
+# Stencil Dimension:    3, X: 64, Y: 64, Z: 64
+# Stencil Grid Size:    262144
+# Stencil Outer Size:   373248
+# Stencil Order:        8
+#==============================================================================
+# Trace file path:       ../traces/3D-31points-O10X64Y64Z64
+# Stencil Dimension:    3, X: 64, Y: 64, Z: 64
+# Stencil Grid Size:    262144
+# Stencil Outer Size:   405224
+# Stencil Order:        10
+#==============================================================================
+# Trace file path:       ../traces/3D-37points-O12X64Y64Z64
+# Stencil Dimension:    3, X: 64, Y: 64, Z: 64
+# Stencil Grid Size:    262144
+# Stencil Outer Size:   438976
+# Stencil Order:        12
+#==============================================================================
