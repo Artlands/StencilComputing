@@ -11,14 +11,14 @@ CFLAGS := -std=c99 -I`pwd`/include/
 
 SRC = ./src
 
-all: finite
+all: stsim
 $(SRC)/pims_util.o:$(SRC)/pims_util.c
 	$(CC) $(CFLAGS) -c -o $@ $<
-$(SRC)/finite.o:$(SRC)/finite.c
+$(SRC)/stsim.o:$(SRC)/stsim.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-finite: $(SRC)/finite.o $(SRC)/pims_util.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/finite.o $(SRC)/pims_util.o -lm
+stsim: $(SRC)/stsim.o $(SRC)/pims_util.o
+	$(CC) $(CFLAGS) -o $@ $(SRC)/stsim.o $(SRC)/pims_util.o -lm
 
 clean:
 	rm -Rf ./src/*.o

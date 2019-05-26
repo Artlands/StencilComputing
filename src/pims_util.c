@@ -77,10 +77,9 @@ extern int read_trace( FILE *infile, trace_node *trace)
 extern void write_to_file(FILE* fp,
                           char* op,
                           int num_bytes,
-                          int procid,
                           uint64_t addr)
 {
-  fprintf(fp, "%s:%d:%d:0x%016"PRIX64"\n", op, num_bytes, procid, addr);
+  fprintf(fp, "%s:%d:0x%016"PRIX64"\n", op, num_bytes, addr);
 }
 /* EOF */
 
@@ -214,10 +213,10 @@ extern void write_cache_info( FILE* fp,
                               uint64_t total_HOST_RD,
                               uint64_t total_HOST_WR,
                               uint64_t total_PIMS_RD,
-                              uint64_t total_PIMS_IM,
-                              double pims_rd_percent,
-                              double hit_rate,
-                              double miss_rate )
+                              uint64_t total_DRAM_RD,
+                              uint64_t total_THROUGHPUT,
+                              uint64_t hits,
+                              uint64_t misses)
 {
   fprintf(fp, "# Trace file path:      %s\n", filename);
   fprintf(fp, "# Cache ways:           %" PRId64 "\n", ways);
@@ -227,10 +226,10 @@ extern void write_cache_info( FILE* fp,
   fprintf(fp, "# Total HOST Read:      %" PRId64 "\n", total_HOST_RD);
   fprintf(fp, "# Total HOST Write:     %" PRId64 "\n", total_HOST_WR);
   fprintf(fp, "# Total PIMS Read:      %" PRId64 "\n", total_PIMS_RD);
-  fprintf(fp, "# Total PIMS In-memory: %" PRId64 "\n", total_PIMS_IM);
-  fprintf(fp, "# PIMS Read Percentage: %f\n", pims_rd_percent);
-  fprintf(fp, "# Hits rate:            %f\n", hit_rate);
-  fprintf(fp, "# Misses rate:          %f\n", miss_rate);
+  fprintf(fp, "# Total DRAM Read:      %" PRId64 "\n", total_DRAM_RD);
+  fprintf(fp, "# Total Throughput:     %" PRId64 "\n", total_THROUGHPUT);
+  fprintf(fp, "# Host Cache Hits:      %" PRId64 "\n", hits);
+  fprintf(fp, "# Host Cache Misses:    %" PRId64 "\n", misses);
   fprintf(fp, "#==============================================================================\n");
 }
 /* EOF */

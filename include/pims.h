@@ -33,10 +33,35 @@ typedef struct cache_node
   int block_size;
   int ways;
   int sets;
-  uint64_t dirty_eviction;
   uint64_t hits;
   uint64_t misses;
 }cache_node;
+
+typedef struct pims_cache_node
+{
+  int cache_size;           //8KB
+  int block_size;           //256B
+  int ways;                 //32 ways
+  int sets;                 //1
+  int valid[1];
+  int tag[1][32];
+  int lru[1][32];
+  uint64_t hits;
+  uint64_t misses;
+}pims_cache_node;
+
+typedef struct cache_node_32
+{
+  int cache_size;           //32KB
+  int block_size;           //64B
+  int ways;                 //8 ways
+  int sets;                 //64
+  int valid[64];
+  int tag[64][8];
+  int lru[64][8];
+  uint64_t hits;
+  uint64_t misses;
+}cache_node_32;
 
 typedef struct trace_node
 {
