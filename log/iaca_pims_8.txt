@@ -1,0 +1,89 @@
+Intel(R) Architecture Code Analyzer Version -  v3.0-28-g1ba2cbb build date: 2017-10-30;16:57:45
+Analyzed File -  ./src/iaca_pims_8.o
+Binary Format - 64Bit
+Architecture  -  Skylake
+Analysis Type - Throughput
+
+Throughput Analysis Report
+--------------------------
+Block Throughput: 16.26 Cycles       Throughput Bottleneck: FrontEnd
+Loop Count:  22
+Port Binding In Cycles Per Iteration:
+--------------------------------------------------------------------------------------------------
+|  Port  |   0   -  DV   |   1   |   2   -  D    |   3   -  D    |   4   |   5   |   6   |   7   |
+--------------------------------------------------------------------------------------------------
+| Cycles |  6.7     0.0  |  6.7  | 14.5    14.1  | 14.5    13.9  |  8.0  |  6.7  |  6.8  |  7.0  |
+--------------------------------------------------------------------------------------------------
+
+DV - Divider pipe (on port 0)
+D - Data fetch pipe (on ports 2 and 3)
+F - Macro Fusion with the previous instruction occurred
+* - instruction micro-ops not bound to a port
+^ - Micro Fusion occurred
+# - ESP Tracking sync uop was issued
+@ - SSE instruction followed an AVX256/AVX512 instruction, dozens of cycles penalty is expected
+X - instruction not supported, was not accounted in Analysis
+
+| Num Of   |                    Ports pressure in cycles                         |      |
+|  Uops    |  0  - DV    |  1   |  2  -  D    |  3  -  D    |  4   |  5   |  6   |  7   |
+-----------------------------------------------------------------------------------------
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | movsd xmm0, qword ptr [rip+0xfd]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | movsd xmm1, qword ptr [rip+0xfd]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | movsd xmm2, qword ptr [rip+0xfd]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | movsd xmm3, qword ptr [rip+0xfd]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x70]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | movsxd rcx, dword ptr [rbp-0x14]
+|   2      |             | 1.0  | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mulsd xmm3, qword ptr [rax+rcx*8]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x80]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov edx, dword ptr [rbp-0x14]
+|   1      |             |      |             |             |      | 1.0  |      |      | add edx, 0x1
+|   1      | 0.3         | 0.3  |             |             |      | 0.5  |      |      | movsxd rcx, edx
+|   2      | 0.7         | 0.3  | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mulsd xmm2, qword ptr [rax+rcx*8]
+|   1      | 0.3         | 0.7  |             |             |      |      |      |      | addsd xmm3, xmm2
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x80]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov edx, dword ptr [rbp-0x14]
+|   1      |             |      |             |             |      | 0.7  | 0.3  |      | add edx, 0x2
+|   1      |             |      |             |             |      | 0.3  | 0.7  |      | movsxd rcx, edx
+|   1*     |             |      |             |             |      |      |      |      | movaps xmm2, xmm1
+|   2      | 0.7         | 0.3  | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mulsd xmm2, qword ptr [rax+rcx*8]
+|   1      | 0.3         | 0.7  |             |             |      |      |      |      | addsd xmm3, xmm2
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x80]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov edx, dword ptr [rbp-0x14]
+|   1      |             |      |             |             |      | 0.7  | 0.3  |      | add edx, 0x3
+|   1      |             |      |             |             |      | 0.3  | 0.7  |      | movsxd rcx, edx
+|   2      | 0.7         | 0.3  | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mulsd xmm1, qword ptr [rax+rcx*8]
+|   1      | 0.3         | 0.7  |             |             |      |      |      |      | addsd xmm3, xmm1
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x80]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov edx, dword ptr [rbp-0x14]
+|   1      |             |      |             |             |      | 0.7  | 0.3  |      | add edx, 0x4
+|   1      |             |      |             |             |      | 0.3  | 0.7  |      | movsxd rcx, edx
+|   2      | 0.7         | 0.3  | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mulsd xmm0, qword ptr [rax+rcx*8]
+|   1      | 0.3         | 0.7  |             |             |      |      |      |      | addsd xmm3, xmm0
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x78]
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | movsxd rcx, dword ptr [rbp-0x14]
+|   2      |             |      | 0.5         | 0.5         | 1.0  |      |      |      | movsd qword ptr [rax+rcx*8], xmm3
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov eax, dword ptr [rbp-0x14]
+|   1      |             |      |             |             |      | 0.7  | 0.3  |      | add eax, 0x1
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov dword ptr [rbp-0x14], eax
+|   1      |             |      |             |             |      |      | 1.0  |      | jmp 0xffffffffffffff31
+|   1      | 0.5         |      |             |             |      |      | 0.5  |      | jmp 0x5
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov eax, dword ptr [rbp-0x18]
+|   1      |             | 0.5  |             |             |      | 0.5  |      |      | add eax, 0x1
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov dword ptr [rbp-0x18], eax
+|   1      | 0.5         |      |             |             |      |      | 0.5  |      | jmp 0xfffffffffffffe75
+|   1      | 0.5         |      |             |             |      |      | 0.5  |      | jmp 0x5
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov eax, dword ptr [rbp-0x1c]
+|   1      |             | 0.5  |             |             |      | 0.5  |      |      | add eax, 0x1
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov dword ptr [rbp-0x1c], eax
+|   1      | 0.5         |      |             |             |      |      | 0.5  |      | jmp 0xfffffffffffffe2b
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x58]
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov qword ptr [rbp-0x50], rax
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x60]
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov qword ptr [rbp-0x58], rax
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov rax, qword ptr [rbp-0x50]
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov qword ptr [rbp-0x60], rax
+|   1      |             |      | 0.5     0.5 | 0.5     0.5 |      |      |      |      | mov eax, dword ptr [rbp-0x20]
+|   1      |             | 0.5  |             |             |      | 0.5  |      |      | add eax, 0x1
+|   2^     |             |      |             |             | 1.0  |      |      | 1.0  | mov dword ptr [rbp-0x20], eax
+|   1      | 0.5         |      |             |             |      |      | 0.5  |      | jmp 0xfffffffffffffdeb
+Total Num Of Uops: 72

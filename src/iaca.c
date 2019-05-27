@@ -33,8 +33,11 @@ int main(int argc, char* argv[])
   double *tmp_point;
   double *data_cntr_a;             // data container
   double *data_cntr_b;             // data container
+  double *data_cntr_c;             // data container
   double *v_pointer;
   double *u_pointer;
+  double *w_pointer;
+
 
   uint32_t cntr_size;
 
@@ -54,6 +57,7 @@ int main(int argc, char* argv[])
   /* Allocate contiguous memory space for storing stencil grid addresses and coefficients */
   data_cntr_a = (double *) malloc( sizeof( double ) * cntr_size);
   data_cntr_b = (double *) malloc( sizeof( double ) * cntr_size);
+  data_cntr_c = (double *) malloc( sizeof( double ) * cntr_size);
 
   /* Init data container */
   for( i = 0; i < cntr_size; i ++)
@@ -62,6 +66,8 @@ int main(int argc, char* argv[])
     data_cntr_a[i] = random_value;
     random_value = (double)rand()/RAND_MAX;
     data_cntr_b[i] = random_value;
+    random_value = (double)rand()/RAND_MAX;
+    data_cntr_c[i] = random_value;
     // printf("%f\n", data_cntr_a[i]);
     // printf("%f\n", data_cntr_b[i]);
   }
@@ -75,6 +81,7 @@ int main(int argc, char* argv[])
       {
         v_pointer = &data_cntr_a[j*tdim_x + k * tdim_x * tdim_y];
         u_pointer = &data_cntr_b[j*tdim_x + k * tdim_x * tdim_y];
+        w_pointer = &data_cntr_c[j*tdim_x + k * tdim_x * tdim_y];
         for( i = sten_order/2; i < (dim_x+sten_order/2); i++ )
         {
           IACA_START
@@ -99,6 +106,11 @@ int main(int argc, char* argv[])
                                         + v_pointer[i - 4 * tdim_x]
                                         + v_pointer[i + 4 * tdim_x*tdim_y]
                                         + v_pointer[i - 4 * tdim_x*tdim_y]);
+          // u_pointer[i] = (double)(0.1) * v_pointer[i]
+          //              + (double)(0.2) * (w_pointer[i + 1])
+          //              + (double)(0.3) * (w_pointer[i + 2])
+          //              + (double)(0.3) * (w_pointer[i + 3])
+          //              + (double)(0.4) * (w_pointer[i + 4]);
         }
       }
     }
