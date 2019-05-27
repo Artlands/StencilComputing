@@ -142,3 +142,75 @@
 # Stencil Outer Size:   19248832
 # Stencil Order:        12
 #==============================================================================
+# Trace file path:       ../traces/PIMS-3D-7points-O2X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2197000
+# Stencil Order:        2
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-13points-O4X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2299968
+# Stencil Order:        4
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-19points-O6X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2406104
+# Stencil Order:        6
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-25points-O8X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2515456
+# Stencil Order:        8
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-31points-O10X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2628072
+# Stencil Order:        10
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-37points-O12X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2744000
+# Stencil Order:        12
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-7points-O2X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2197000
+# Stencil Order:        2
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-13points-O4X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2299968
+# Stencil Order:        4
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-19points-O6X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2406104
+# Stencil Order:        6
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-25points-O8X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2515456
+# Stencil Order:        8
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-31points-O10X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2628072
+# Stencil Order:        10
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-37points-O12X128Y128Z128
+# Stencil Dimension:    3, X: 128, Y: 128, Z: 128
+# Stencil Grid Size:    2097152
+# Stencil Outer Size:   2744000
+# Stencil Order:        12
+#==============================================================================
