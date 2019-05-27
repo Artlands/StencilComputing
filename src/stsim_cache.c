@@ -28,6 +28,10 @@ uint64_t oldestAge = 0;
 uint64_t indexOfOldest = 0;
 uint64_t nextEntryIndex = 0;
 
+/* Global variables for cache*/
+int *valid;
+int **tag;
+int **lru;
 /* ---------------------------------------------- FUNCTION PROTOTYPES*/
 extern int getshiftamount( uint32_t bsize, uint32_t *shiftamt );
 
@@ -68,15 +72,13 @@ extern void write_cache_info( FILE* fp,
                               uint64_t total_HOST_REQ,
                               uint64_t total_HOST_RD,
                               uint64_t total_HOST_WR,
-                              uint64_t total_HOST_LA,
                               uint64_t total_PIMS_RD,
                               uint64_t total_DRAM_RD,
                               uint64_t total_THROUGHPUT,
                               uint64_t hits,
                               uint64_t misses );
 
-int host_lru_simulation( cache_node_32 *cache, uint64_t address);
-int pims_lru_simulation( pims_cache_node *cache, uint64_t address);
+int host_lru_simulation( cache_node *cache, uint64_t address);
 
 /* Main Function. Takes command line arguments, generates stencil grid addresses*/
 int main(int argc, char* argv[])
@@ -117,8 +119,6 @@ int main(int argc, char* argv[])
 
   /* PIMS */
   int flag = 0;                   // PIMS flag, without PIMS, flag = 0; with PIMS, flag = 1;
-  int pimsid;                     // destination id
-  pims_cache_node pims_cache[32]; // PIMS caches
 
   /* MEMORY TRACE */
   uint64_t base_a = 0x00ll;
@@ -132,7 +132,6 @@ int main(int argc, char* argv[])
   uint64_t total_HOST_REQ = 0;  // host total requests
   uint64_t total_HOST_RD = 0;   // host memory read requests
   uint64_t total_HOST_WR = 0;   // host memory write requests
-  uint64_t total_HOST_LA = 0;   // host memory load&add requests
   uint64_t total_PIMS_RD = 0;   // pims memory read requests
   uint64_t total_DRAM_RD = 0;   // pims in memory requests
   uint64_t total_THROUGHPUT = 0;// total throughput
@@ -158,6 +157,8 @@ int main(int argc, char* argv[])
   /* CACHE */
   char cachelog[1024];                 // cache log file name
   FILE *cachelogfile = NULL;
+  int cache_size;                      // specified by user
+  int num_block;                       // number of blocks in cache
 
 /*----------------------------------------------------------------------------*/
 
@@ -192,6 +193,9 @@ int main(int argc, char* argv[])
       case 'v':
         vaults = (uint32_t)(atoi(optarg));
         break;
+      case 'a':
+        cache_size = (int)(atoi(optarg));
+        break;
       case 'h':
         printf("%s%s%s\n", "usage : ", argv[0], " -xyzoipcbvah");
         printf(" -x <stencil grid size on dim x>\n");
@@ -203,6 +207,7 @@ int main(int argc, char* argv[])
         printf(" -c <HMC capacity: 4, 8>");
         printf(" -b <HMC blocksize: 32, 64, 128, 256>");
         printf(" -v <HMC vaults: 16, 32>");
+        printf(" -a <Cache size: 32, 64, 128, 256, 512, 1024 in KB>");
         printf(" h ...print help\n");
         return 0;
         break;
@@ -238,7 +243,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  if( flag != 0 && flag != 1) {
+  if( flag != 0 ) {
     printf("ERROR: PIMS flag is invalid");
     return -1;
   }
@@ -258,7 +263,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  sprintf(tracelog, "../traces/trace.log");
+  sprintf(tracelog, "../traces/trace_ana.log");
   tracelogfile = fopen(tracelog, "a");
   if( tracelogfile == NULL )
   {
@@ -266,7 +271,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  sprintf(cachelog, "../traces/cache.log");
+  sprintf(cachelog, "../traces/cache_ana.log");
   cachelogfile = fopen(cachelog, "a");
   if( cachelogfile == NULL )
   {
@@ -358,49 +363,47 @@ int main(int argc, char* argv[])
    *
    */
   printf("Initialize Host Cache...\n");
-  cache_node_32 host_cache = {.cache_size = 32768,
-                              .block_size = 64,
-                              .ways = 8,
-                              .sets = 64,
-                              .hits = 0,
-                              .misses = 0};
+  num_block = (cache_size * 1024)/BLOCKSIZE;
+  cache_node host_cache = {.cache_size = cache_size * 1024,
+                           .block_size = BLOCKSIZE,
+                           .ways = WAYS,
+                           .sets = num_block/WAYS,
+                           .hits = 0,
+                           .misses = 0};
+#ifdef DEBUGSET
+  printf("# Blocks: %d\n", num_block);
+#endif
 
+  valid  = (int *) malloc( sizeof( int ) * host_cache.sets);
+  tag = (int **) malloc( sizeof( int *) * host_cache.sets);
+  lru = (int **) malloc( sizeof( int *) * host_cache.sets);
 
+  if( valid == NULL || tag == NULL || lru == NULL )
+  {
+    printf("Error: Out of memory\n");
+    goto cleanup;
+  }
+
+  for( i = 0; i < host_cache.sets; i++ )
+  {
+    tag[i] = (int *) malloc( sizeof( int ) * host_cache.ways);
+    lru[i] = (int *) malloc( sizeof( int ) * host_cache.ways);
+    if(tag[i] == NULL || lru[i] == NULL)
+    {
+      printf("Error: Out of memory\n");
+      goto cleanup;
+    }
+  }
+
+  printf("Initialize Cache...\n");
   for( i = 0; i < host_cache.sets; i++ )
   {
     for( j = 0; j < host_cache.ways; j++ )
     {
-      host_cache.tag[i][j] = -1;
-      host_cache.lru[i][j] = -1;
+      tag[i][j] = -1;
+      lru[i][j] = -1;
     }
-    host_cache.valid[i] = 0;
-  }
-  printf("Done!\n");
-
-  printf("Initialize PIMS Caches...\n");
-  /*
-   *
-   * Initialize the pims caches
-   *
-   */
-  for( i = 0; i < 32; i++ )
-  {
-    pims_cache[i].cache_size = 8192;
-    pims_cache[i].block_size = 256;
-    pims_cache[i].ways = 32;
-    pims_cache[i].sets = 1;
-    pims_cache[i].hits = 0;
-    pims_cache[i].misses = 0;
-
-    for( j = 0; j < pims_cache[i].sets; j++)
-    {
-      for( k = 0; k < pims_cache[i].ways; k++)
-      {
-        pims_cache[i].tag[j][k] = -1;
-        pims_cache[i].lru[j][k] = -1;
-      }
-      pims_cache[i].valid[j] = 0;
-    }
+    valid[i] = 0;
   }
   printf("Done!\n");
 
@@ -582,111 +585,7 @@ int main(int argc, char* argv[])
             total_HOST_WR++;
           }  //Endif flag
           else{
-             /* PIMS, memory request from host */
-             memset(ops, 0, sizeof(ops));
-             sprintf(ops, "HOST_RD");
-
-             // Read central point
-             ret = host_lru_simulation(&host_cache, v_pointer[i]);
-             if( ret == -1 )
-             {
- #ifdef GENTRACE
-               write_to_file(tracefile, ops, stor_size, v_pointer[i]);
- #endif
-             }
-             total_HOST_RD++;
-
-             // Read coefficients and corresponding calculated values
-             for( r = 1; r <= (sten_order/2); r++ )
-             {
-               memset(ops, 0, sizeof(ops));
-               sprintf(ops, "HOST_LA");       // load&add operation
- #ifdef GENTRACE
-               write_to_file(tracefile, ops, stor_size, v_pointer[i]);
- #endif
-               total_HOST_LA++;
-
-               /* In memory trace */
-               memset(ops, 0, sizeof(ops));
-               sprintf(ops, "PIMS_RD");
-               // dim_x
-               getpimsid( &pimsid, v_pointer[i-r], shiftamt, vaults );
-               ret = pims_lru_simulation(&pims_cache[pimsid], v_pointer[i-r]);
-               if( ret == -1 )
-               {
- #ifdef GENTRACE
-                 write_to_file(tracefile, ops, stor_size, v_pointer[i-r]);
- #endif
-                 total_DRAM_RD++;
-               }
-               total_PIMS_RD++;
-
-               getpimsid( &pimsid, v_pointer[i+r], shiftamt, vaults );
-               ret = pims_lru_simulation(&pims_cache[pimsid], v_pointer[i+r]);
-               if( ret == -1 )
-               {
- #ifdef GENTRACE
-                 write_to_file(tracefile, ops, stor_size, v_pointer[i+r]);
- #endif
-                 total_DRAM_RD++;
-               }
-               total_PIMS_RD++;
-
-               // dim_y
-               getpimsid( &pimsid, v_pointer[i - r * tdim_x], shiftamt, vaults );
-               ret = pims_lru_simulation(&pims_cache[pimsid], v_pointer[i - r * tdim_x]);
-               if( ret == -1 )
-               {
- #ifdef GENTRACE
-                 write_to_file(tracefile, ops, stor_size, v_pointer[i - r * tdim_x]);
- #endif
-                 total_DRAM_RD++;
-               }
-               total_PIMS_RD++;
-
-               getpimsid( &pimsid, v_pointer[i + r * tdim_x], shiftamt, vaults );
-               ret = pims_lru_simulation(&pims_cache[pimsid], v_pointer[i + r * tdim_x]);
-               if( ret == -1 )
-               {
- #ifdef GENTRACE
-                 write_to_file(tracefile, ops, stor_size, v_pointer[i + r * tdim_x]);
- #endif
-                 total_DRAM_RD++;
-               }
-               total_PIMS_RD++;
-
-               // dim_z
-               getpimsid( &pimsid, v_pointer[i - r * tdim_x * tdim_y], shiftamt, vaults );
-               ret = pims_lru_simulation(&pims_cache[pimsid], v_pointer[i - r * tdim_x * tdim_y]);
-               if( ret == -1 )
-               {
- #ifdef GENTRACE
-                 write_to_file(tracefile, ops, stor_size, v_pointer[i - r * tdim_x * tdim_y]);
- #endif
-                 total_DRAM_RD++;
-               }
-               total_PIMS_RD++;
-
-               getpimsid( &pimsid, v_pointer[i + r * tdim_x * tdim_y], shiftamt, vaults );
-               ret = pims_lru_simulation(&pims_cache[pimsid], v_pointer[i + r * tdim_x * tdim_y]);
-               if( ret == -1 )
-               {
- #ifdef GENTRACE
-                 write_to_file(tracefile, ops, stor_size, v_pointer[i + r * tdim_x * tdim_y]);
- #endif
-                 total_DRAM_RD++;
-               }
-               total_PIMS_RD++;
-             }
-
-             // Write result
-             memset(ops, 0, sizeof(ops));
-             sprintf(ops, "HOST_WR");
-
- #ifdef GENTRACE
-             write_to_file(tracefile, ops, stor_size, u_pointer[i]);
- #endif
-             total_HOST_WR++;
+             /* PIMS SIMULATION*/
           }
         }    //Endfor i
       }      //Endfor j
@@ -702,13 +601,13 @@ int main(int argc, char* argv[])
   if( flag == 0 )
   {
     total_HOST_REQ = total_HOST_RD + total_HOST_WR;
-    total_THROUGHPUT = (uint64_t)(host_cache.misses * (uint64_t)(64));
+    total_THROUGHPUT = (uint64_t)(host_cache.misses * (uint64_t)(64 + 16));
   }
   else
   {
-    total_HOST_REQ = total_HOST_RD + total_HOST_WR + total_HOST_LA;
-    total_THROUGHPUT = (uint64_t)(total_HOST_LA * (uint64_t)(8))
-                     + (uint64_t)(host_cache.misses * (uint64_t)(64));
+    total_HOST_REQ = total_HOST_RD + total_HOST_WR + total_PIMS_RD;
+    total_THROUGHPUT = (uint64_t)(total_HOST_RD * (uint64_t)(8 + 16))
+                     + (uint64_t)(host_cache.misses * (uint64_t)(64 + 16));
   }
   printf("Write cache information!\n");
   write_cache_info( cachelogfile, filename, host_cache.ways,
@@ -716,7 +615,6 @@ int main(int argc, char* argv[])
                     total_HOST_REQ,
                     total_HOST_RD,
                     total_HOST_WR,
-                    total_HOST_LA,
                     total_PIMS_RD,
                     total_DRAM_RD,
                     total_THROUGHPUT,
@@ -744,6 +642,36 @@ cleanup:
   if( page_table != NULL )
   {
     free(page_table);
+  }
+
+  printf("Free cache-sim!\n");
+  if( valid != NULL )
+  {
+    free(valid);
+  }
+
+  if( tag != NULL )
+  {
+    for( i = 0; i < host_cache.sets; i++ )
+    {
+      if( tag[i] != NULL )
+      {
+        free(tag[i]);
+      }
+    }
+    free(tag);
+  }
+
+  if( lru != NULL )
+  {
+    for( i = 0; i < host_cache.sets; i++ )
+    {
+      if( lru[i] != NULL )
+      {
+        free(lru[i]);
+      }
+    }
+    free(lru);
   }
 
   printf("Free stencil memory traces container!\n");
@@ -847,7 +775,7 @@ extern void mapVirtualaddr(uint64_t virtual_addr,
 /* EOF */
 
 // /* --------------------------------------------- host_lru_simulation */
-int host_lru_simulation( cache_node_32 *cache, uint64_t address )
+int host_lru_simulation( cache_node *cache, uint64_t address )
 {
   uint64_t block_addr = (uint64_t)( address / (cache->block_size) );
   uint64_t index = (uint64_t)( block_addr % cache->sets);
@@ -868,25 +796,25 @@ int host_lru_simulation( cache_node_32 *cache, uint64_t address )
   int result;         // -1 means miss, 1 means hit
 
   // Compare tag
-  if( cache->valid[index] == 0 )
+  if( valid[index] == 0 )
   {
 #ifdef DEBUGCACHE
     printf("Invalid!\n");
 #endif
-    cache->valid[index] = 1;
-    cache->tag[index][0] = tag_val;
-    cache->lru[index][0] = 0;
+    valid[index] = 1;
+    tag[index][0] = tag_val;
+    lru[index][0] = 0;
 
     // Miss!
     cache->misses ++;
     result = -1;
   }
-  else if( cache->valid[index] == 1 )
+  else if( valid[index] == 1 )
   {
     hit_flag = 0;
     for( i = 0; i < cache->ways; i ++ )
     {
-      if( cache->tag[index][i] == tag_val )
+      if( tag[index][i] == tag_val )
       {
 #ifdef DEBUGCACHE
     printf("HIT!!\n");
@@ -898,12 +826,12 @@ int host_lru_simulation( cache_node_32 *cache, uint64_t address )
         //update lru
         for( j = 0; j < cache->ways; j ++)
         {
-          if( (cache->lru[index][j] != -1) && (cache->lru[index][j] < cache->lru[index][i]) )
+          if( (lru[index][j] != -1) && (lru[index][j] < lru[index][i]) )
           {
-            cache->lru[index][j] = cache->lru[index][j] + 1;
+            lru[index][j] = lru[index][j] + 1;
           }
         }
-        cache->lru[index][i] = 0;
+        lru[index][i] = 0;
         break;
       }
     }
@@ -919,16 +847,16 @@ int host_lru_simulation( cache_node_32 *cache, uint64_t address )
       // find the lru block in cache
       for( i = 0; i < cache->ways; i++ )
       {
-        if( cache->lru[index][i] == -1 )
+        if( lru[index][i] == -1 )
         {
           found = 1;
-          cache->tag[index][i] = tag_val;
+          tag[index][i] = tag_val;
           // update lru
           for( j = 0; j < i; j++ )
           {
-            cache->lru[index][j] = cache->lru[index][j] + 1;
+            lru[index][j] = lru[index][j] + 1;
           }
-          cache->lru[index][i] = 0;
+          lru[index][i] = 0;
           break;
         }
       }
@@ -939,131 +867,19 @@ int host_lru_simulation( cache_node_32 *cache, uint64_t address )
         lru1 = 0;
         for( j = 0; j < cache->ways; j++ )
         {
-          if( cache->lru[index][j] == (cache->ways - 1) )
+          if( lru[index][j] == (cache->ways - 1) )
           {
             lru1 = j;
             break;
           }
         }
-        cache->tag[index][lru1] = tag_val;
+        tag[index][lru1] = tag_val;
 
         for( j = 0; j < cache->ways; j++ )
         {
-          cache->lru[index][j] = cache->lru[index][j] + 1;
+          lru[index][j] = lru[index][j] + 1;
         }
-        cache->lru[index][lru1] = 0;
-      }
-    } // Endif hit_flag
-  }   // Endelif Valid
-  return result;
-}
-
-// /* --------------------------------------------- pims_lru_simulation */
-int pims_lru_simulation( pims_cache_node *cache, uint64_t address )
-{
-  uint64_t block_addr = (uint64_t)( address / (cache->block_size) );
-  uint64_t index = (uint64_t)( block_addr % cache->sets);
-  uint64_t tag_val = (uint64_t)( block_addr >> (uint64_t)log2(cache->sets));
-
-#ifdef DEBUGCACHE
-  printf("%s%016" PRIX64 "\n", "Physcial addr: ", address);
-  printf("%s%016" PRIX64 "\n", "Block addr: ", block_addr);
-  printf("%s%016" PRIX64 "\n", "Index: ", index);
-  printf("%s%016" PRIX64 "\n", "Tag: ", tag_val);
-#endif
-
-  int hit_flag;
-  int found;
-  int i;
-  int j;
-  int lru1;
-  int result;         // -1 means miss, 1 means hit
-
-  // Compare tag
-  if( cache->valid[index] == 0 )
-  {
-#ifdef DEBUGCACHE
-    printf("Invalid!\n");
-#endif
-    cache->valid[index] = 1;
-    cache->tag[index][0] = tag_val;
-    cache->lru[index][0] = 0;
-
-    // Miss!
-    cache->misses ++;
-    result = -1;
-  }
-  else if( cache->valid[index] == 1 )
-  {
-    hit_flag = 0;
-    for( i = 0; i < cache->ways; i ++ )
-    {
-      if( cache->tag[index][i] == tag_val )
-      {
-#ifdef DEBUGCACHE
-    printf("HIT!!\n");
-#endif
-        // Hit!
-        hit_flag = 1;
-        result = 1;
-        cache->hits ++;
-        //update lru
-        for( j = 0; j < cache->ways; j ++)
-        {
-          if( (cache->lru[index][j] != -1) && (cache->lru[index][j] < cache->lru[index][i]) )
-          {
-            cache->lru[index][j] = cache->lru[index][j] + 1;
-          }
-        }
-        cache->lru[index][i] = 0;
-        break;
-      }
-    }
-    if( hit_flag == 0 )
-    {
-#ifdef DEBUGCACHE
-    printf("MISS!!\n");
-#endif
-      // Miss!
-      result = -1;
-      cache->misses ++;
-      found = 0;
-      // find the lru block in cache
-      for( i = 0; i < cache->ways; i++ )
-      {
-        if( cache->lru[index][i] == -1 )
-        {
-          found = 1;
-          cache->tag[index][i] = tag_val;
-          // update lru
-          for( j = 0; j < i; j++ )
-          {
-            cache->lru[index][j] = cache->lru[index][j] + 1;
-          }
-          cache->lru[index][i] = 0;
-          break;
-        }
-      }
-      if( found == 0 )
-      {
-        //all blocks are in use
-        // replace the highest lru
-        lru1 = 0;
-        for( j = 0; j < cache->ways; j++ )
-        {
-          if( cache->lru[index][j] == (cache->ways - 1) )
-          {
-            lru1 = j;
-            break;
-          }
-        }
-        cache->tag[index][lru1] = tag_val;
-
-        for( j = 0; j < cache->ways; j++ )
-        {
-          cache->lru[index][j] = cache->lru[index][j] + 1;
-        }
-        cache->lru[index][lru1] = 0;
+        lru[index][lru1] = 0;
       }
     } // Endif hit_flag
   }   // Endelif Valid

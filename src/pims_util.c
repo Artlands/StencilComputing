@@ -212,6 +212,7 @@ extern void write_cache_info( FILE* fp,
                               uint64_t total_HOST_REQ,
                               uint64_t total_HOST_RD,
                               uint64_t total_HOST_WR,
+                              uint64_t total_HOST_LA,
                               uint64_t total_PIMS_RD,
                               uint64_t total_DRAM_RD,
                               uint64_t total_THROUGHPUT,
@@ -225,6 +226,7 @@ extern void write_cache_info( FILE* fp,
   fprintf(fp, "# Total HOST Requests:  %" PRId64 "\n", total_HOST_REQ);
   fprintf(fp, "# Total HOST Read:      %" PRId64 "\n", total_HOST_RD);
   fprintf(fp, "# Total HOST Write:     %" PRId64 "\n", total_HOST_WR);
+  fprintf(fp, "# Total HOST Load&Add:  %" PRId64 "\n", total_HOST_LA);
   fprintf(fp, "# Total PIMS Read:      %" PRId64 "\n", total_PIMS_RD);
   fprintf(fp, "# Total DRAM Read:      %" PRId64 "\n", total_DRAM_RD);
   fprintf(fp, "# Total Throughput:     %" PRId64 "\n", total_THROUGHPUT);

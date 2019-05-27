@@ -1,0 +1,84 @@
+# Trace file path:      ../traces/PIMS-3D-7points-O2X64Y64Z64
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  1572864
+# Total HOST Read:      524288
+# Total HOST Write:     524288
+# Total HOST Load&Add:  524288
+# Total PIMS Read:      3145728
+# Total DRAM Read:      17957
+# Total Throughput:     8523776
+# Host Cache Hits:      456640
+# Host Cache Misses:    67648
+#==============================================================================
+# Trace file path:      ../traces/PIMS-3D-13points-O4X64Y64Z64
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  2097152
+# Total HOST Read:      524288
+# Total HOST Write:     524288
+# Total HOST Load&Add:  1048576
+# Total PIMS Read:      6291456
+# Total DRAM Read:      19651
+# Total Throughput:     12845056
+# Host Cache Hits:      454656
+# Host Cache Misses:    69632
+#==============================================================================
+# Trace file path:      ../traces/PIMS-3D-19points-O6X64Y64Z64
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  2621440
+# Total HOST Read:      524288
+# Total HOST Write:     524288
+# Total HOST Load&Add:  1572864
+# Total PIMS Read:      9437184
+# Total DRAM Read:      67004
+# Total Throughput:     17172480
+# Host Cache Hits:      452576
+# Host Cache Misses:    71712
+#==============================================================================
+# Trace file path:      ../traces/PIMS-3D-25points-O8X64Y64Z64
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  3145728
+# Total HOST Read:      524288
+# Total HOST Write:     524288
+# Total HOST Load&Add:  2097152
+# Total PIMS Read:      12582912
+# Total DRAM Read:      163546
+# Total Throughput:     21495808
+# Host Cache Hits:      450560
+# Host Cache Misses:    73728
+#==============================================================================
+# Trace file path:      ../traces/PIMS-3D-31points-O10X64Y64Z64
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  3670016
+# Total HOST Read:      524288
+# Total HOST Write:     524288
+# Total HOST Load&Add:  2621440
+# Total PIMS Read:      15728640
+# Total DRAM Read:      212146
+# Total Throughput:     25624576
+# Host Cache Hits:      451584
+# Host Cache Misses:    72704
+#==============================================================================
+# Trace file path:      ../traces/PIMS-3D-37points-O12X64Y64Z64
+# Cache ways:           8
+# Cache size:           32768
+# Block size:           64
+# Total HOST Requests:  4194304
+# Total HOST Read:      524288
+# Total HOST Write:     524288
+# Total HOST Load&Add:  3145728
+# Total PIMS Read:      18874368
+# Total DRAM Read:      257730
+# Total Throughput:     29753344
+# Host Cache Hits:      452608
+# Host Cache Misses:    71680
+#==============================================================================
