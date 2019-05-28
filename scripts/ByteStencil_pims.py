@@ -65,7 +65,7 @@ for i in range(0,6):
     red_256 = (host_grid_256[i] - pims_grid_256[i])* 100/host_grid_256[i]
     red_grid_256.append(red_256)
 
-# print(red_grid_64)
+print(pims_point_128)
 
 ind = np.arange(len(orders))
 width = 0.2
@@ -104,5 +104,5 @@ ax.legend(fontsize=14)
 
 
 plt.tight_layout()
-plt.savefig('ByteStencil_pims.eps', format='eps', dpi=1000)
+# plt.savefig('ByteStencil_pims.eps', format='eps', dpi=1000)
 # plt.show()

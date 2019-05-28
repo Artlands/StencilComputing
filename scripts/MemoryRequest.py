@@ -42,24 +42,37 @@ for i in range(0,6):
     pims_point_256.append(pims_grid_256[i]/size_grid_256)
 
 # Memory traffic reduction
-red_grid_32 = []
 red_grid_64 = []
 red_grid_128 = []
 red_grid_256 = []
+red_aver_64_128 = []
+red_aver_64 = 0
+red_aver_128= 0
+red_aver_256 = 0
 for i in range(0,6):
-    red_32 = (host_grid_32[i] - pims_grid_32[i]) * 100/host_grid_32[i]
-    red_grid_32.append(red_32)
-
     red_64 = (host_grid_64[i] - pims_grid_64[i])* 100/host_grid_64[i]
     red_grid_64.append(red_64)
+    red_aver_64 = red_aver_64 + red_64
 
     red_128 = (host_grid_128[i] - pims_grid_128[i])* 100/host_grid_128[i]
     red_grid_128.append(red_128)
+    red_aver_128 = red_aver_128 + red_128
 
     red_256 = (host_grid_256[i] - pims_grid_256[i])* 100/host_grid_256[i]
     red_grid_256.append(red_256)
+    red_aver_256 = red_aver_256 + red_256
+
+    red_aver = (red_64 + red_128)/2
+    red_aver_64_128.append(red_aver)
 
 # print(red_grid_64)
+# print(red_grid_128)
+# print(red_grid_256)
+# print(red_aver_64_128)
+
+print(red_aver_64/6)
+print(red_aver_128/6)
+print(red_aver_256/6)
 
 ind = np.arange(len(orders))
 width = 0.2
@@ -87,5 +100,5 @@ ax.grid(linestyle='--')
 ax.yaxis.offsetText.set_fontsize(14)
 ax.legend(fontsize=14)
 plt.tight_layout()
-plt.savefig('MemoryTrafficReduction.eps', format='eps', dpi=1000)
+# plt.savefig('MemoryTrafficReduction.eps', format='eps', dpi=1000)
 # plt.show()

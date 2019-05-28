@@ -47,6 +47,9 @@ for i in range(0,6):
     pims_point_128.append(pims_grid_128[i]/size_grid_128)
     pims_point_256.append(pims_grid_256[i]/size_grid_256)
 
+print(host_point_128)
+print(host_point_256)
+
 # Memory traffic reduction
 red_grid_32 = []
 red_grid_64 = []
@@ -100,5 +103,5 @@ ax.legend(fontsize=14)
 
 
 plt.tight_layout()
-plt.savefig('ByteStencil_host.eps', format='eps', dpi=1000)
+# plt.savefig('ByteStencil_host.eps', format='eps', dpi=1000)
 # plt.show()
