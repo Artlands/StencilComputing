@@ -214,3 +214,75 @@
 # Stencil Outer Size:   2744000
 # Stencil Order:        12
 #==============================================================================
+# Trace file path:       ../traces/HOST-3D-7points-O2X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   39304
+# Stencil Order:        2
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-13points-O4X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   46656
+# Stencil Order:        4
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-19points-O6X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   54872
+# Stencil Order:        6
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-25points-O8X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   64000
+# Stencil Order:        8
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-31points-O10X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   74088
+# Stencil Order:        10
+#==============================================================================
+# Trace file path:       ../traces/HOST-3D-37points-O12X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   85184
+# Stencil Order:        12
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-7points-O2X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   39304
+# Stencil Order:        2
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-13points-O4X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   46656
+# Stencil Order:        4
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-19points-O6X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   54872
+# Stencil Order:        6
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-25points-O8X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   64000
+# Stencil Order:        8
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-31points-O10X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   74088
+# Stencil Order:        10
+#==============================================================================
+# Trace file path:       ../traces/PIMS-3D-37points-O12X32Y32Z32
+# Stencil Dimension:    3, X: 32, Y: 32, Z: 32
+# Stencil Grid Size:    32768
+# Stencil Outer Size:   85184
+# Stencil Order:        12
+#==============================================================================
