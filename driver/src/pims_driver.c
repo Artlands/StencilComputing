@@ -113,7 +113,7 @@ static int print_bankconflict(struct hmcsim_t *hmc) {
 	return -1;
     }
     fprintf( hmc->tfile, "HMCSIM_TRACE : %" PRIu64
-                        " : BAND_CONFLICT : %" PRIu64 "\n", hmc->clk, hmc->istat.bank_conflict);
+                        " : BANK_CONFLICT : %" PRIu64 "\n", hmc->clk, hmc->istat.bank_conflict);
 }
 /* ----------------------------------------------GET_HMCMEMOP */
 /* FOR DMC POWER*/
@@ -579,7 +579,11 @@ int main( int argc, char **argv ) {
 	memset( rtns, 0, sizeof( int ) * hmc.num_links );
 
 	hmcsim_trace_handle( &hmc, outfile );
-	hmcsim_trace_level( &hmc, (HMC_TRACE_BANK|        // trace bank info
+	hmcsim_trace_level( &hmc, (HMC_TRACE_BANK|
+                             HMC_TRACE_QUEUE|
+                             HMC_TRACE_CMD|
+                             HMC_TRACE_STALL|
+                             HMC_TRACE_LATENCY|       // trace bank info
 														 HMC_TRACE_POWER) );		// trace power info
 	hmcsim_trace_header( &hmc );
 
