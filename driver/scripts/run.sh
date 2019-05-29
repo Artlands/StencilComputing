@@ -10,6 +10,6 @@ LD_LIBRARY_PATH=/home/jieli/gc64-hmcsim
 
 export LD_LIBRARY_PATH
 
-echo "Executing : $PIMSPOWER -f $TRACEFILE -C $CFILE D"
+echo "Executing : $PIMSPOWER -f $TRACEFILE -C $CFILE"
 
-$PIMSPOWER -f $TRACEFILE -C $CFILE -D
+$PIMSPOWER -f $TRACEFILE -C $CFILE
