@@ -440,7 +440,7 @@ int main( int argc, char **argv ) {
   uint32_t d_crc;
 
 	/* ---- */
-	while(( ret = getopt( argc, argv, "f:hC:D" )) != -1 ) {
+	while(( ret = getopt( argc, argv, "f:hC:" )) != -1 ) {
 		switch( ret )
 		{
 			case 'f':

@@ -5,11 +5,11 @@
 #
 # ---------------------------------------
 
-CFLAGS = -I/home/jieli/gc64-hmcsim/include/
+CFLAGS = -I/home/jieli/ham-sim/gc64-hmcsim/include/
 
 CC = gcc
 
-LIBS = -L/home/jieli/gc64-hmcsim -lhmcsim
+LIBS = -L/home/jieli/ham-sim/gc64-hmcsim -lhmcsim
 
 SRC=./src
 
