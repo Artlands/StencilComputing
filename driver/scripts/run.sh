@@ -2,7 +2,7 @@
 
 PIMSPOWER=../pims_driver
 
-TRACEFILE=/home/jieli/StencilComputing/traces/HOST-3D-7points-02X64Y64Z64
+TRACEFILE=/home/jieli/StencilComputing/traces/HOST-3D-7points-O2X64Y64Z64
 
 CFILE=../config.pims
 
