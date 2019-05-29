@@ -131,16 +131,16 @@ static int get_hmcmemop( int type, int nbytes, hmc_rqst_t *op ){
 		switch( nbytes )
 		{
 			case 1 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 2 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 4 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 8 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 16:
 				*op = WR16;
@@ -178,16 +178,16 @@ static int get_hmcmemop( int type, int nbytes, hmc_rqst_t *op ){
 		switch( nbytes )
 		{
 			case 1 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 2 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 4 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 8 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 16:
 				*op = RD16;
@@ -259,9 +259,6 @@ static int rqst_packet_length( hmc_rqst_t op ){
 			val = 3;
 			break;
 		case WR16:
-      val = 2;
-      break;
-    case WR8:
 			val = 2;
 			break;
 		default:

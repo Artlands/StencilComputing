@@ -5,7 +5,7 @@
 #
 # ---------------------------------------
 
-CFLAGS = -I/home/jieli/gc64-hmcsim/include/ -I`pwd`/include/
+CFLAGS = -I/home/jieli/gc64-hmcsim/include/
 
 CC = gcc
 
