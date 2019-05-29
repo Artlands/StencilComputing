@@ -20,7 +20,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <time.h>
-#include "hmc_sim_addtypes.h"
 #include "hmc_sim.h"
 
 /* -------------------------------------------------- PRINT_HELP */
