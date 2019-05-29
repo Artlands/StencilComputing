@@ -13,9 +13,9 @@ LIBS = -L/home/jieli/gc64-hmcsim -lhmcsim
 
 SRC=./src
 
-all: pims_driver.c
+all: pims_driver
 
-dmc_power: $(SRC)/pims_driver.o
+pims_driver: $(SRC)/pims_driver.o
 	$(CC) $(CFLAGS) -o $@ $(SRC)/pims_driver.c $(LIBS)
 
 clean:
