@@ -6,7 +6,7 @@ TRACEFILE=/home/jieli/StencilComputing/traces/HOST-3D-7points-02X64Y64Z64
 
 CFILE=../config.pims
 
-LD_LIBRARY_PATH=/home/jieli/ham_sim/gc64-hmcsim
+LD_LIBRARY_PATH=/home/jieli/ham-sim/gc64-hmcsim
 
 export LD_LIBRARY_PATH
 
