@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <time.h>
+#include "hmc_sim_addtypes.h"
 #include "hmc_sim.h"
 
 /* -------------------------------------------------- PRINT_HELP */
@@ -464,12 +465,6 @@ int main( int argc, char **argv ) {
 	}
 
 	/* sanity check */
-  if( input == -1 ){
-    printf( "error : no input method selected\n" );
-		print_help();
-    return -1;
-  }
-
 	if( (strlen( filename ) == 0) ) {
 		printf( "error : filename is invalid\n" );
 		return -1;
