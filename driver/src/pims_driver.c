@@ -259,6 +259,8 @@ static int rqst_packet_length( hmc_rqst_t op ){
 			val = 3;
 			break;
 		case WR16:
+      val = 2;
+      break;
     case WR8:
 			val = 2;
 			break;
