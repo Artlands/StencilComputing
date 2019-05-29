@@ -391,7 +391,7 @@ int main( int argc, char **argv ) {
 	uint32_t queue_depth	= 64;
 	uint32_t num_banks	= 16;
 	uint32_t num_drams	= 20;
-	uint32_t capacity	= 8;
+	uint32_t capacity	= 4;
 	uint32_t xbar_depth	= 128;
   uint32_t bsize  = 256;
 	char *cfile = NULL;
@@ -562,7 +562,7 @@ int main( int argc, char **argv ) {
   }
 
 
-  sprintf(outfname, "../hmcsim/%s", filename);
+  sprintf(outfname, "result.out");
   outfile = fopen( outfname, "w" );
   if( outfile == NULL ){
     printf( "FAILED : COULD NOT OPEN OUPUT FILE hmc_trace.out\n" );
