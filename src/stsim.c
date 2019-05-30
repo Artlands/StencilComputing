@@ -17,7 +17,7 @@
 #include <math.h>
 #include "pims.h"
 
-// #define GENTRACE     // generate traces
+#define GENTRACE     // generate traces
 // #define DEBUGPT      //debug page table
 // #define DEBUGVP      //debug virtual page and offset
 // #define DEBUGSET     //debug settings

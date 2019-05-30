@@ -10,7 +10,7 @@
 # Total DRAM Read:      0
 # Total Throughput:     813744256
 # Host Cache Hits:      222166270
-# Host Cache Misses:    12714754
+# Host Cache Misses:    12714754  //* (64+16) = 1017180320
 #==============================================================================
 # Trace file path:      ../traces/HOST-3D-13points-O4X256Y256Z256
 # Cache ways:           8

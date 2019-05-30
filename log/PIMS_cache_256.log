@@ -5,12 +5,12 @@
 # Total HOST Requests:  100663296
 # Total HOST Read:      33554432
 # Total HOST Write:     33554432
-# Total HOST Load&Add:  33554432
+# Total HOST Load&Add:  33554432 //* (8+16) = 805306368
 # Total PIMS Read:      201326592
 # Total DRAM Read:      3179458
 # Total Throughput:     538984448
 # Host Cache Hits:      29327104
-# Host Cache Misses:    4227328
+# Host Cache Misses:    4227328 //* (64+16) = 338186240
 #==============================================================================
 # Trace file path:      ../traces/PIMS-3D-13points-O4X256Y256Z256
 # Cache ways:           8
