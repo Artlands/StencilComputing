@@ -5,18 +5,18 @@
 #
 # ---------------------------------------
 
-CFLAGS = -I/home/jieli/ham-sim/gc64-hmcsim/include/
+# CFLAGS = -I/home/jieli/ham-sim/gc64-hmcsim/include/
 
 CC = gcc
 
-LIBS = -L/home/jieli/ham-sim/gc64-hmcsim -lhmcsim
+# LIBS = -L/home/jieli/ham-sim/gc64-hmcsim -lhmcsim
 
 SRC=./src
 
-all: pims_driver
+all: bankconflict_driver
 
-pims_driver: $(SRC)/pims_driver.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/pims_driver.c $(LIBS)
+bankconflict_driver: $(SRC)/bankconflict_driver.o
+	$(CC) -o $@ $(SRC)/bankconflict_driver.c
 
 clean:
-	rm -Rf ./pims_driver ./src/*.o
+	rm -Rf ./bankconflict_driver ./src/*.o
