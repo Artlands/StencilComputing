@@ -25,7 +25,7 @@
 /* -------------------------------------------------- PRINT_HELP */
 static void print_help(){
 	printf( "------------------------------------------------------\n" );
-	printf( "         MEMORY TRACE POWER CONSUMPATION| BANK CONFLICT\n" );
+	printf( "   MEMORY TRACE POWER CONSUMPATION | BANK CONFLICT    \n" );
 	printf( "------------------------------------------------------\n" );
 	printf( " Usage: run_hmcsim <options>\n" );
 	printf( " <options>\n" );
@@ -100,20 +100,20 @@ static int print_power(struct hmcsim_t *hmc) {
 		return 0;
 };
 
-static int print_latency(struct hmcsim_t *hmc) {
-    if( hmc->tfile == NULL) {
-	return -1;
-    }
-    fprintf( hmc->tfile, "HMCSIM_TRACE : %" PRIu64
-                        " : PACKET_LATENCY : %" PRIu64 "\n", hmc->clk, hmc->istat.t_latency);
-}
+// static int print_latency(struct hmcsim_t *hmc) {
+//     if( hmc->tfile == NULL) {
+// 	return -1;
+//     }
+//     fprintf( hmc->tfile, "HMCSIM_TRACE : %" PRIu64
+//                         " : PACKET_LATENCY : %" PRIu64 "\n", hmc->clk, hmc->istat.t_latency);
+// }
 
 static int print_bankconflict(struct hmcsim_t *hmc) {
     if( hmc->tfile == NULL) {
 	return -1;
     }
     fprintf( hmc->tfile, "HMCSIM_TRACE : %" PRIu64
-                        " : BAND_CONFLICT : %" PRIu64 "\n", hmc->clk, hmc->istat.bank_conflict);
+                        " : BANK_CONFLICT : %" PRIu64 "\n", hmc->clk, hmc->istat.bank_conflict);
 }
 /* ----------------------------------------------GET_HMCMEMOP */
 /* FOR DMC POWER*/
@@ -130,16 +130,16 @@ static int get_hmcmemop( int type, int nbytes, hmc_rqst_t *op ){
 		switch( nbytes )
 		{
 			case 1 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 2 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 4 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 8 :
-				*op = WR8;
+				*op = WR16;
 				break;
 			case 16:
 				*op = WR16;
@@ -177,16 +177,16 @@ static int get_hmcmemop( int type, int nbytes, hmc_rqst_t *op ){
 		switch( nbytes )
 		{
 			case 1 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 2 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 4 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 8 :
-				*op = RD8;
+				*op = RD16;
 				break;
 			case 16:
 				*op = RD16;
@@ -258,7 +258,6 @@ static int rqst_packet_length( hmc_rqst_t op ){
 			val = 3;
 			break;
 		case WR16:
-    case WR8:
 			val = 2;
 			break;
 		default:
@@ -378,11 +377,10 @@ int main( int argc, char **argv ) {
 	FILE *infile = NULL;
 	FILE *outfile = NULL;		//save hmcsim power evaluation to an output file
 	char filename[1024];
+  char outfname[1024];
 
 	clock_t start, end;
 	double cpu_time_used;
-
-	int dmc = 0;
 	struct hmcmtrace *rqst =  malloc(sizeof(struct hmcmtrace));
 
 	/* vars for init hmc-sim */
@@ -395,7 +393,7 @@ int main( int argc, char **argv ) {
 	uint32_t num_drams	= 20;
 	uint32_t capacity	= 4;
 	uint32_t xbar_depth	= 128;
-  uint32_t bsize  = 128;
+  uint32_t bsize  = 256;
 	char *cfile = NULL;
 	struct hmcsim_t hmc;
 
@@ -442,15 +440,10 @@ int main( int argc, char **argv ) {
   uint32_t d_crc;
 
 	/* ---- */
-	while(( ret = getopt( argc, argv, "f:p:hC:D" )) != -1 ) {
+	while(( ret = getopt( argc, argv, "f:hC:" )) != -1 ) {
 		switch( ret )
 		{
 			case 'f':
-				input = 0;
-				sprintf( filename, "%s", optarg );
-				break;
-			case 'p':
-				input = 1;
 				sprintf( filename, "%s", optarg );
 				break;
 			case 'h' :
@@ -461,9 +454,6 @@ int main( int argc, char **argv ) {
 				cfile = malloc( sizeof( char ) * (strlen(optarg) + 1) );
 				sprintf( cfile, "%s", optarg);
 				break;
-			case 'D' :
-				dmc = 1;
-				break;
 			default:
 				printf("Unknown option!\n");
 				print_help();
@@ -473,18 +463,7 @@ int main( int argc, char **argv ) {
 	}
 
 	/* sanity check */
-  if( input == -1 ){
-    printf( "error : no input method selected\n" );
-		print_help();
-    return -1;
-  }
-
-	if( (input == 0 ) && (strlen( filename ) == 0) ) {
-		printf( "error : filename is invalid\n" );
-		return -1;
-	}
-
-	if( (input == 1) && (strlen( filename ) == 0) ) {
+	if( (strlen( filename ) == 0) ) {
 		printf( "error : filename is invalid\n" );
 		return -1;
 	}
@@ -574,41 +553,23 @@ int main( int argc, char **argv ) {
 	 *
 	 *
 	 */
-  if( input == 0 ){
-    infile = fopen( filename, "r" );
-    if( infile == NULL ){
+  infile = fopen( filename, "r" );
+  if( infile == NULL ){
     printf( "error : could not open file %s\n", filename );
-		hmcsim_free( &hmc );
-		free(rqst);
+  	hmcsim_free( &hmc );
+  	free(rqst);
     return -1;
-    }
-  }else {
-    fd = open( filename, O_RDONLY );
-    if( fd == -1 ){
-      printf( "ERROR : COULD NOT OPEN NAMED PIPE AT %s\n", filename );
-			hmcsim_free( &hmc );
-			free(rqst);
-      return -1;
-    }
   }
 
-	if ( dmc == 0 ) {
-		outfile = fopen( "raw_trace.out", "w" );
-	  if( outfile == NULL ){
-	    printf( "FAILED : COULD NOT OPEN OUPUT FILE hmc_trace.out\n" );
-			hmcsim_free( &hmc );
-			free(rqst);
-	    return -1;
-	  }
-	} else {
-		outfile = fopen( "ham_trace.out", "w" );
-	  if( outfile == NULL ){
-	    printf( "FAILED : COULD NOT OPEN OUPUT FILE hmc_trace.out\n" );
-			hmcsim_free( &hmc );
-			free(rqst);
-	    return -1;
-	  }
-	}
+
+  sprintf(outfname, "result.out");
+  outfile = fopen( outfname, "w" );
+  if( outfile == NULL ){
+    printf( "FAILED : COULD NOT OPEN OUPUT FILE hmc_trace.out\n" );
+    hmcsim_free( &hmc );
+    free(rqst);
+    return -1;
+  }
 
 	/*
    * execute the hmc-sim
@@ -618,8 +579,12 @@ int main( int argc, char **argv ) {
 	memset( rtns, 0, sizeof( int ) * hmc.num_links );
 
 	hmcsim_trace_handle( &hmc, outfile );
-	hmcsim_trace_level( &hmc, (HMC_TRACE_LATENCY|
-														 HMC_TRACE_POWER) );		//only trace power info
+	hmcsim_trace_level( &hmc, (HMC_TRACE_BANK|
+                             HMC_TRACE_QUEUE|
+                             HMC_TRACE_CMD|
+                             HMC_TRACE_STALL|
+                             HMC_TRACE_LATENCY|       // trace bank info
+														 HMC_TRACE_POWER) );		// trace power info
 	hmcsim_trace_header( &hmc );
 
 	printf( "SUCCESS : INITIALIZED TRACE HANDLERS\n" );
@@ -630,7 +595,7 @@ int main( int argc, char **argv ) {
    */
   zero_packet( &(packet[0]) );
 
-  printf( "BEGINNING TEST EXECUTION\n" );
+  printf( "BEGINNING EXECUTION\n" );
 
 	/*
 	 * Attempt to execute all the requests
@@ -648,34 +613,17 @@ int main( int argc, char **argv ) {
 
 		/* read first trace */
 		if (rqst == NULL) {
-			if (input == 0) {
+			rddone = read_hmc_trace( infile, rqst );
+			if( rddone == 0 ) {
+				if( rqst->type != 2) {
+					trace ++;
+				}
+			}
+			while ( rddone != 0 ) {
 				rddone = read_hmc_trace( infile, rqst );
 				if( rddone == 0 ) {
 					if( rqst->type != 2) {
 						trace ++;
-					}
-				}
-				while ( rddone != 0 ) {
-					rddone = read_hmc_trace( infile, rqst );
-					if( rddone == 0 ) {
-						if( rqst->type != 2) {
-							trace ++;
-						}
-					}
-				}
-			} else {
-				rddone = read_hmc_trace_pipe( fd, rqst );
-				if( rddone == 0 ) {
-					if( rqst->type != 2) {
-						trace ++;
-					}
-				}
-				while ( rddone != 0 ) {
-					rddone = read_hmc_trace_pipe( fd, rqst );
-					if( rddone == 0 ) {
-						if( rqst->type != 2) {
-							trace ++;
-						}
 					}
 				}
 			}
@@ -732,37 +680,20 @@ int main( int argc, char **argv ) {
 					// printf( "SUCCESS : PACKET WAS SUCCESSFULLY SENT\n" );
 					all_sent++;
 					/* read the next request */
-	  			if (input == 0) {
-	  				rddone = read_hmc_trace( infile, rqst );
+  				rddone = read_hmc_trace( infile, rqst );
+					if( rddone == 0 ) {
+						if( rqst->type != 2) {
+							trace ++;
+						}
+					}
+  				while ( rddone != 0 ) {
+  					rddone = read_hmc_trace( infile, rqst);
 						if( rddone == 0 ) {
 							if( rqst->type != 2) {
 								trace ++;
 							}
 						}
-	  				while ( rddone != 0 ) {
-	  					rddone = read_hmc_trace( infile, rqst);
-							if( rddone == 0 ) {
-								if( rqst->type != 2) {
-									trace ++;
-								}
-							}
-	  				}
-	  			} else {
-	  				rddone = read_hmc_trace_pipe( fd, rqst);
-						if( rddone == 0 ) {
-							if( rqst->type != 2) {
-								trace ++;
-							}
-						}
-	  				while ( rddone != 0 ) {
-	  					rddone = read_hmc_trace_pipe( fd, rqst);
-							if( rddone == 0 ) {
-								if( rqst->type != 2) {
-									trace ++;
-								}
-							}
-	  				}
-	  			}
+  				}
 					break;
 				case HMC_STALL:
 					// printf( "STALLED : PACKET WAS STALLED IN SENDING\n" );
@@ -903,7 +834,7 @@ int main( int argc, char **argv ) {
 				printf( "ALL_TRACES = %ld\n", trace );
 				done = 1;
 				print_power(&hmc);
-				print_latency(&hmc);
+				print_bankconflict(&hmc);
 				end = clock();
 				cpu_time_used = ( (double) (end - start) )/CLOCKS_PER_SEC;
 				printf( "Total Computing time is : %f s\n", cpu_time_used );
@@ -920,12 +851,7 @@ complete_failure:
 		cfile = NULL;
 	}
 
-	if( input == 0 ){
-  	fclose( infile );
-  }else if( input == 1 ){
-  	close( fd );
-  }
-
+  fclose( infile );
 	fclose( outfile );
 	infile = NULL;
 	outfile = NULL;
