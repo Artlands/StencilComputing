@@ -1,0 +1,48 @@
+# Trace file path:  /home/jieli/StencilComputing/traces/HOST-3D-7points-O2X64Y64Z64
+# Total traces:     729282
+# Bank Conflicts:   656252
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/PIMS-3D-7points-O2X64Y64Z64
+# Total traces:     609893
+# Bank Conflicts:   556268
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/HOST-3D-13points-O4X64Y64Z64
+# Total traces:     876800
+# Bank Conflicts:   764761
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/PIMS-3D-13points-O4X64Y64Z64
+# Total traces:     613514
+# Bank Conflicts:   557294
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/HOST-3D-19points-O6X64Y64Z64
+# Total traces:     1032960
+# Bank Conflicts:   877123
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/PIMS-3D-19points-O6X64Y64Z64
+# Total traces:     658220
+# Bank Conflicts:   564670
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/HOST-3D-25points-O8X64Y64Z64
+# Total traces:     1197056
+# Bank Conflicts:   996275
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/PIMS-3D-25points-O8X64Y64Z64
+# Total traces:     760022
+# Bank Conflicts:   575560
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/HOST-3D-31points-O10X64Y64Z64
+# Total traces:     1338528
+# Bank Conflicts:   1087851
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/PIMS-3D-31points-O10X64Y64Z64
+# Total traces:     809138
+# Bank Conflicts:   580624
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/HOST-3D-37points-O12X64Y64Z64
+# Total traces:     1475776
+# Bank Conflicts:   1173146
+#==============================================================================
+# Trace file path:  /home/jieli/StencilComputing/traces/PIMS-3D-37points-O12X64Y64Z64
+# Total traces:     853698
+# Bank Conflicts:   587294
+#==============================================================================

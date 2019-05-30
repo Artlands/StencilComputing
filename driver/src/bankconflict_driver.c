@@ -23,7 +23,7 @@
 
 #define BANK_MASK 0x000000000001FF00
 #define BANK_SHIFT 8
-#define DEBUG
+//#define DEBUG
 
 /* -------------------------------------------------- PRINT_HELP */
 static void print_help(){
