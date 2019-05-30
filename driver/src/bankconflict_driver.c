@@ -23,6 +23,7 @@
 
 #define BANK_MASK 0x000000000001FF00
 #define BANK_SHIFT 8
+#define DEBUG
 
 /* -------------------------------------------------- PRINT_HELP */
 static void print_help(){
@@ -232,8 +233,17 @@ int main( int argc, char **argv ) {
 		}
 
 		bankid = get_bankid(rqst->addr);
+#ifdef DEBUG
+		printf("Bank ID: %d\n", bankid);
+#endif
+
 		if( bank[bankid] == 1) {
 			totalconflict ++;
+
+#ifdef DEBUG
+		printf("Bank Conflict!\n");
+#endif
+
 		} else {
 			bank[bankid] = 1;
 		}
