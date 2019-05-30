@@ -198,11 +198,11 @@ int main( int argc, char **argv ) {
     return -1;
   }
 
-	sprintf(outfname, "../bankconflicts.log");
+	sprintf(outfname, "../conflicts.log");
 	outfile = fopen(outfname, "a");
 	if( outfile == NULL )
 	{
-		printf("ERROR: Cannot open bankconflict log file %s\n", outfname);
+		printf("ERROR: Cannot open bank conflict log file %s\n", outfname);
     return -1;
 	}
 
@@ -246,6 +246,7 @@ int main( int argc, char **argv ) {
 		}
 	}
 	fprintf(outfile, "# Trace file path:  %s\n", filename);
+	fprintf(outfile, "# Total traces:     %" PRId64 "\n", trace);
 	fprintf(outfile, "# Bank Conflicts:   %" PRId64 "\n", totalconflict);
 	fprintf(outfile, "#==============================================================================\n");
 
