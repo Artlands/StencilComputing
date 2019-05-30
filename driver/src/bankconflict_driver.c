@@ -21,8 +21,8 @@
 #include <inttypes.h>
 #include <time.h>
 
-#define BANK_MASK = 0x000000000001FF00
-#define BANK_SHIFT = 8;
+#define BANK_MASK 0x000000000001FF00
+#define BANK_SHIFT 8;
 
 /* -------------------------------------------------- PRINT_HELP */
 static void print_help(){
@@ -41,22 +41,20 @@ static void print_help(){
 struct hmcmtrace {
   uint32_t proc;	/* proc id */
   int type;       /* read or write */
-  hmc_rqst_t op;    /* memory operation type */
+	int nbytes;
   uint64_t addr;  /* base address of the request */
 };
 
-/* ----------------------------------------read_hmc_trace_FILE */
+/* ----------------------------------------read_trace_FILE */
 /* only works when trace file is this type: RD/WR:INT:ADDR */
-static int read_hmc_trace( FILE *infile, struct hmcmtrace *otrace ){
+static int read_trace( FILE *infile, struct hmcmtrace *otrace ){
 	/* vars */
 	char buf[50];
 	char *token;
 	size_t len	= 0;
 	int type	= -1;	/* {0=WR,1=RD,2=EX}*/
 	int nbytes	= 0;
-	uint32_t proc	= 0;
 	uint64_t addr	= 0x00ull;
-	hmc_rqst_t op;
 	/* ---- */
 
 	/* read a single entry from the trace file */
@@ -64,7 +62,7 @@ static int read_hmc_trace( FILE *infile, struct hmcmtrace *otrace ){
 		/* fill out the data structure */
 		otrace->proc 	= 0;
 		otrace->type = 2;
-		otrace->op	= FLOW_NULL;
+		otrace->nbytes = 0;
 		otrace->addr	= 0x00ull;
 		return 0;
 	}
@@ -110,22 +108,16 @@ static int read_hmc_trace( FILE *infile, struct hmcmtrace *otrace ){
 	/* -- last part of address in hex */
 	addr = (uint64_t)(strtol( token, NULL, 16 ));
 
-	/* get the appropriate memory operand */
-	if( get_hmcmemop( type, nbytes, &op) != 0 ){
-		// printf( "error : erroneous message type from get_hmcmemop\n" );
-		return -1;
-	}
-
 	/* fill out the data structure */
 	otrace->proc 	= proc;
 	otrace->type = type;
-	otrace->op	= op;
+	otrace->nbytes = nbytes;
 	otrace->addr	= addr;
 
 #ifdef DEBUG
 	printf( "::DEBUG::      proc = %d\n", otrace->proc );
 	printf( "::DEBUG::      type = %d\n", otrace->type );
-	printf( "::DEBUG::      op   = %d\n", (int)(otrace->op) );
+	printf( "::DEBUG::      nbytes = %d\n", otrace->nbytes );
 	printf( "::DEBUG::      addr = 0x%016lx\n", otrace->addr );
 #endif
 
@@ -152,6 +144,7 @@ static int get_bankid( uint64_t address ) {
 int main( int argc, char **argv ) {
 
 	/* vars */
+	int ret;
 	int i;
 
 	FILE *infile = NULL;
@@ -218,14 +211,14 @@ int main( int argc, char **argv ) {
 	i = 0;
 	while( done != 1 ) {
 		/* read trace */
-		rddone = read_hmc_trace( infile, rqst );
+		rddone = read_trace( infile, rqst );
 		if( rddone == 0 ) {
 			if( rqst->type != 2) {
 				trace ++;
 			}
 		}
 		while ( rddone != 0 ) {
-			rddone = read_hmc_trace( infile, rqst );
+			rddone = read_trace( infile, rqst );
 			if( rddone == 0 ) {
 				if( rqst->type != 2) {
 					trace ++;
