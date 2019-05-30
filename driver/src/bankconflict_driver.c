@@ -22,7 +22,7 @@
 #include <time.h>
 
 #define BANK_MASK 0x000000000001FF00
-#define BANK_SHIFT 8;
+#define BANK_SHIFT 8
 
 /* -------------------------------------------------- PRINT_HELP */
 static void print_help(){
@@ -54,6 +54,7 @@ static int read_trace( FILE *infile, struct hmcmtrace *otrace ){
 	size_t len	= 0;
 	int type	= -1;	/* {0=WR,1=RD,2=EX}*/
 	int nbytes	= 0;
+	uint32_t proc	= 0;
 	uint64_t addr	= 0x00ull;
 	/* ---- */
 
@@ -165,8 +166,6 @@ int main( int argc, char **argv ) {
 
 	clock_t start, end;
 	double cpu_time_used;
-	struct hmcmtrace *rqst =  malloc(sizeof(struct hmcmtrace));
-
 
 	/* ---- */
 	while(( ret = getopt( argc, argv, "f:h" )) != -1 ) {
