@@ -108,6 +108,7 @@ static int read_trace( FILE *infile, struct hmcmtrace *otrace ){
 	/* -- first part of address = 0x */
 	token = strtok( NULL, "x" );
 	/* -- last part of address in hex */
+	token = strtok( NULL, " ");
 	addr = (uint64_t)(strtol( token, NULL, 16 ));
 
 	/* fill out the data structure */
@@ -120,7 +121,7 @@ static int read_trace( FILE *infile, struct hmcmtrace *otrace ){
 	printf( "::DEBUG::      proc = %d\n", otrace->proc );
 	printf( "::DEBUG::      type = %d\n", otrace->type );
 	printf( "::DEBUG::      nbytes = %d\n", otrace->nbytes );
-	printf( "::DEBUG::      addr = 0x%016lx\n", otrace->addr );
+	printf( "::DEBUG::      addr = %" PRId64 "\n", otrace->addr );
 #endif
 
   return 0;
