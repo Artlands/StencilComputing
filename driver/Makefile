@@ -19,7 +19,7 @@ $(SRC)/bankconflict_driver.o:$(SRC)/bankconflict_driver.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 bankconflict_driver: $(SRC)/bankconflict_driver.o
-	$(CC) $(CFLAGS) -o $@ $(SRC)/bankconflict_driver.c
+	$(CC) $(CFLAGS) -o $@ $(SRC)/bankconflict_driver.o
 
 clean:
 	rm -Rf ./bankconflict_driver ./src/*.o
