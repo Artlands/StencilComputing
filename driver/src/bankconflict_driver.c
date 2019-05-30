@@ -20,7 +20,6 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <time.h>
-#include "hmc_sim.h"
 
 #define BANK_MASK = 0x000000000001FF00
 #define BANK_SHIFT = 8;
@@ -257,6 +256,11 @@ int main( int argc, char **argv ) {
 	fprintf(outfile, "# Trace file path:  %s\n", filename);
 	fprintf(outfile, "# Bank Conflicts:   %" PRId64 "\n", totalconflict);
 	fprintf(outfile, "#==============================================================================\n");
+
+	end = clock();
+	cpu_time_used = ( (double) (end - start) )/CLOCKS_PER_SEC;
+	printf( "Total Computing time is : %f s\n", cpu_time_used );
+
 	return 0;
 }
 
