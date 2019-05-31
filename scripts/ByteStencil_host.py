@@ -96,12 +96,13 @@ vals = ax.get_yticks()
 
 ax.xaxis.set_ticks(orders)
 ax.xaxis.set_ticklabels(orders)
-ax.grid(linestyle='--')
+# ax.grid(linestyle='--')
+ax.yaxis.grid(linestyle='--')
 ax.yaxis.offsetText.set_fontsize(14)
 ax.legend(fontsize=14)
 
 
 
 plt.tight_layout()
-# plt.savefig('ByteStencil_host.eps', format='eps', dpi=1000)
-# plt.show()
+plt.savefig('ByteStencil_host.eps', format='eps', dpi=1000)
+plt.show()

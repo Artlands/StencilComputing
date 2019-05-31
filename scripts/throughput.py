@@ -52,11 +52,12 @@ width = 0.3
 w,h = figaspect(1/2)
 fig, ax = plt.subplots(figsize=(w,h))
 
-ax.bar(ind-width/2 - 0.01, host_c, width, color='#DF6466')
-ax.bar(ind-width/2 - 0.01, host_d, bottom = host_c, color='#f7ac8b', width = width)
 
-ax.bar(ind+width/2 + 0.01, pims_c, width, color='#676488')
-ax.bar(ind+width/2 + 0.01, pims_d, bottom = pims_c, color='#ACC0D3', width = width)
+ax.bar(ind-width/2 - 0.01, host_d, bottom = host_c, color='#f7ac8b', width = width, label="Without PIMS, Requset Size")
+ax.bar(ind-width/2 - 0.01, host_c, width, color='#DF6466', label="Without PIMS, Overhead")
+
+ax.bar(ind+width/2 + 0.01, pims_d, bottom = pims_c, color='#ACC0D3', width = width, label="With PIMS, Requset Size")
+ax.bar(ind+width/2 + 0.01, pims_c, width, color='#676488', label="With PIMS, Overhead")
 
 # rects1 = ax.bar(ind, red_grid_64, width, label = "Grid 128x128x128")
 # rects2 = ax.bar(ind, red_grid_128, width, label = "Grid 128x128x128")
@@ -75,7 +76,7 @@ ax.xaxis.set_ticks(ind)
 ax.xaxis.set_ticklabels(x)
 ax.yaxis.grid(linestyle='--')
 ax.yaxis.offsetText.set_fontsize(14)
-# ax.legend(fontsize=14)
+ax.legend(bbox_to_anchor = (0., 1.02, 1., .102), loc = 3, ncol = 2, mode = "expand", fontsize=14, borderaxespad=0.)
 
 
 

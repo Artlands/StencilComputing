@@ -72,12 +72,13 @@ ax.set_yticklabels(['{:,.2f}'.format(x) for x in vals])
 
 ax.xaxis.set_ticks(orders)
 ax.xaxis.set_ticklabels(orders)
-ax.grid(linestyle='--')
+# ax.grid(linestyle='--')
+ax.yaxis.grid(linestyle='--')
 ax.yaxis.offsetText.set_fontsize(14)
 ax.legend(fontsize=14)
 
 
 
 plt.tight_layout()
-plt.savefig('ThroughputReduction.eps', format='eps', dpi=1000)
-# plt.show()
+plt.savefig('BankConflictsReduction.eps', format='eps', dpi=1000)
+plt.show()
