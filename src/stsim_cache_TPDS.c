@@ -72,6 +72,7 @@ extern void write_cache_info( FILE* fp,
                               uint64_t total_HOST_REQ,
                               uint64_t total_HOST_RD,
                               uint64_t total_HOST_WR,
+                              uint64_t total_HOST_LA,
                               uint64_t total_PIMS_RD,
                               uint64_t total_DRAM_RD,
                               uint64_t total_THROUGHPUT,
@@ -132,6 +133,7 @@ int main(int argc, char* argv[])
   uint64_t total_HOST_REQ = 0;  // host total requests
   uint64_t total_HOST_RD = 0;   // host memory read requests
   uint64_t total_HOST_WR = 0;   // host memory write requests
+  uint64_t total_HOST_LA = 0;
   uint64_t total_PIMS_RD = 0;   // pims memory read requests
   uint64_t total_DRAM_RD = 0;   // pims in memory requests
   uint64_t total_THROUGHPUT = 0;// total throughput
@@ -606,20 +608,24 @@ int main(int argc, char* argv[])
   if( flag == 0 )
   {
     total_HOST_REQ = total_HOST_RD + total_HOST_WR;
-    total_THROUGHPUT = (uint64_t)(host_cache.misses * (uint64_t)(64 + 16));
+    total_THROUGHPUT = (uint64_t)(host_cache.misses * (uint64_t)(64));
   }
   else
   {
     total_HOST_REQ = total_HOST_RD + total_HOST_WR + total_PIMS_RD;
-    total_THROUGHPUT = (uint64_t)(total_HOST_RD * (uint64_t)(8 + 16))
-                     + (uint64_t)(host_cache.misses * (uint64_t)(64 + 16));
+    total_THROUGHPUT = (uint64_t)(total_HOST_RD * (uint64_t)(8))
+                     + (uint64_t)(host_cache.misses * (uint64_t)(64));
   }
   printf("Write cache information!\n");
-  write_cache_info( cachelogfile, filename, host_cache.ways,
-                    host_cache.cache_size, host_cache.block_size,
+  write_cache_info( cachelogfile, 
+                    filename, 
+                    host_cache.ways,
+                    host_cache.cache_size, 
+                    host_cache.block_size,
                     total_HOST_REQ,
                     total_HOST_RD,
                     total_HOST_WR,
+                    total_HOST_LA,
                     total_PIMS_RD,
                     total_DRAM_RD,
                     total_THROUGHPUT,
