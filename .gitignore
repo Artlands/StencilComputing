@@ -1,3 +1,5 @@
 # ingore the following folders
 scripts/env/
 traces/
+
+.DS_Store
