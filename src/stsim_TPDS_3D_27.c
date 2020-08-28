@@ -232,10 +232,10 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  if ( sten_order < 2 || (sten_order % 2) != 0 ) {
-    printf("ERROR: Stencil order is invalid\n");
-    return -1;
-  }
+  // if ( sten_order < 2 || (sten_order % 2) != 0 ) {
+  //   printf("ERROR: Stencil order is invalid\n");
+  //   return -1;
+  // }
 
   if( iteration < 1 )
   {
