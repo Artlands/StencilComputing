@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GENERATOR=../stsim_TPDS
+GENERATOR=../stsim_TPDS_3D_27
 DIM_X=256
 DIM_Y=256
 DIM_Z=256
